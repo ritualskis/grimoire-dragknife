@@ -1,6 +1,5 @@
 import { Component, Show, createSignal, onMount } from "solid-js";
 import { VectricHeader } from "./VectricHeader";
-import { VectorToolsSidebar, type VectorToolId } from "./VectorToolsSidebar";
 import { SheetSettingsPanel } from "./SheetSettingsPanel";
 import { HudStatsCard } from "./HudStatsCard";
 import { ParameterControls } from "./ParameterControls";
@@ -14,17 +13,15 @@ import {
   type Unit,
 } from "../types/dragknife";
 import { analyzeGCode, processDragKnifeGCode } from "../lib/tauri";
-import { SAMPLE_GCODE_FILES } from "../assets/sample-data";
+import { SAMPLE_GCODE_FILES, type SampleFile } from "../assets/sample-data";
 
 export const DragKnifeStudio: Component = () => {
   const [currentFileContent, setCurrentFileContent] = createSignal<string>("");
   const [currentFilename, setCurrentFilename] = createSignal<string>("");
   const [projectName, setProjectName] = createSignal<string>("Blacklight Base v0*");
-  const [activeSheetName, setActiveSheetName] = createSignal<string>("Base");
   const [unit, setUnit] = createSignal<Unit>("in");
   const [isProcessing, setIsProcessing] = createSignal<boolean>(false);
   const [activeTab, setActiveTab] = createSignal<"sheet" | "dragknife" | "hud" | "gcode">("sheet");
-  const [activeVectorTool, setActiveVectorTool] = createSignal<VectorToolId>("select");
 
   let fileInputRef: HTMLInputElement | undefined;
 
@@ -181,6 +178,20 @@ export const DragKnifeStudio: Component = () => {
     }
   };
 
+  const handleExportGCode = () => {
+    const res = dragKnifeResult();
+    if (!res || !res.processed_gcode) return;
+    const blob = new Blob([res.processed_gcode], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = currentFilename()
+      ? currentFilename().replace(/\.(gcode|nc|tap|txt)$/i, "_dragknife.nc")
+      : "dragknife_output.nc";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const triggerOpenDialog = () => {
     fileInputRef?.click();
   };
@@ -198,6 +209,10 @@ export const DragKnifeStudio: Component = () => {
       };
       reader.readAsText(file);
     }
+  };
+
+  const handleSelectSample = (sample: SampleFile) => {
+    handleFileLoaded(sample.gcode, sample.filename);
   };
 
   onMount(() => {
@@ -218,29 +233,22 @@ export const DragKnifeStudio: Component = () => {
         onChange={handleNativeFileInput}
       />
 
-      {/* Top Vectric Spark Menu and Project Header */}
+      {/* Top Vectric Spark Header */}
       <VectricHeader
         projectName={projectName()}
         onProjectNameChange={setProjectName}
-        activeSheetName={activeSheetName()}
-        onSelectSheet={setActiveSheetName}
         unit={unit()}
         onUnitToggle={handleUnitToggle}
         onOpenFile={triggerOpenDialog}
-        onOpenSheetSettings={() => setActiveTab("sheet")}
-        isSheetSettingsOpen={activeTab() === "sheet"}
+        onSelectSample={handleSelectSample}
         activeTab={activeTab()}
         onToggleTab={setActiveTab}
+        onExport={handleExportGCode}
+        hasFile={Boolean(currentFileContent())}
       />
 
       {/* Main Studio Viewport and Sidebars */}
       <div class="spark-main-workspace flex flex-1 overflow-hidden">
-        {/* Left: Vector CAD Palette Toolbar */}
-        <VectorToolsSidebar
-          activeTool={activeVectorTool()}
-          onSelectTool={setActiveVectorTool}
-        />
-
         {/* Center: CAD Canvas Viewport with Material Sheet */}
         <main class="spark-canvas-area flex flex-col flex-1 relative overflow-hidden">
           <VisualizerCanvas
