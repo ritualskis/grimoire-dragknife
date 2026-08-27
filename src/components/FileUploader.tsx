@@ -61,7 +61,6 @@ export const FileUploader: Component<FileUploaderProps> = (props) => {
           style={{ display: "none" }}
         />
         <div class="dropzone-content">
-          <div class="dropzone-icon">📁</div>
           <div class="dropzone-text">
             <span class="dropzone-primary">
               {props.currentFilename

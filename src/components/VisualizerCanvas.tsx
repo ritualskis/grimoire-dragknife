@@ -362,7 +362,6 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       {/* Top Toolbar */}
       <div class="visualizer-toolbar flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <span class="hud-badge-icon">👁️</span>
           <span class="visualizer-title">2D TOOLPATH & SWIVEL INSPECTOR</span>
         </div>
 
@@ -435,10 +434,10 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
         {/* View Actions */}
         <div class="flex items-center gap-1">
           <button class="tool-btn" onClick={zoomToFit} title="Zoom to Fit" type="button">
-            ⛶ Fit
+            Fit
           </button>
           <button class="tool-btn" onClick={resetView} title="Reset View" type="button">
-            ↺ Reset
+            Reset
           </button>
         </div>
       </div>

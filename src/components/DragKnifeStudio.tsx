@@ -120,10 +120,10 @@ export const DragKnifeStudio: Component = () => {
       {/* Top Header */}
       <header class="app-header flex items-center justify-between surface-card">
         <div class="flex items-center gap-3">
-          <span class="app-logo">🔪⚡</span>
+          <div class="app-logo-badge font-mono font-bold text-accent">DK</div>
           <div>
             <h1 class="app-title">GRIMOIRE DRAGKNIFE</h1>
-            <span class="app-subtitle">Ritual Skis • Barebones Vectric Drag Knife Post-Processor</span>
+            <span class="app-subtitle">Ritual Skis &bull; Barebones Vectric Drag Knife Post-Processor</span>
           </div>
         </div>
 

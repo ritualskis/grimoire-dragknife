@@ -10,10 +10,9 @@ pub use parser::parse_gcode;
 pub use processor::process_dragknife_program;
 pub use types::{
     BoundingBox, Contour, DragKnifeConfig, DragKnifeResult, HUDStats, MotionMode, Point2D,
-    Point3D, SwivelArcInfo, Unit,
+    Point3D, StepdownInfo, SwivelArcInfo, Unit,
 };
 
-/// Parse input G-code and generate comprehensive HUD statistics.
 pub fn parse_and_analyze(gcode: &str, config: Option<&DragKnifeConfig>) -> Result<HUDStats, String> {
     let program = parse_gcode(gcode);
     let default_cfg = DragKnifeConfig::default();
@@ -21,7 +20,6 @@ pub fn parse_and_analyze(gcode: &str, config: Option<&DragKnifeConfig>) -> Resul
     Ok(analyze_program(&program, cfg))
 }
 
-/// Process G-code with Vectric-accurate Drag Knife corner compensation.
 pub fn process_dragknife(gcode: &str, config: &DragKnifeConfig) -> Result<DragKnifeResult, String> {
     let program = parse_gcode(gcode);
     let hud_stats = analyze_program(&program, config);

@@ -28,7 +28,11 @@ pub struct ParsedProgram {
     pub contours: Vec<Contour>,
     pub rapid_points: Vec<Point3D>,
     pub all_points: Vec<Point3D>,
+    pub rapid_z_levels: Vec<f64>,
+    pub cut_z_levels: Vec<f64>,
     pub feedrates: Vec<f64>,
+    pub plunge_feedrates: Vec<f64>,
+    pub cut_feedrates: Vec<f64>,
     pub spindle_commands: Vec<String>,
     pub min_z: Option<f64>,
     pub max_z: Option<f64>,
@@ -43,12 +47,16 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
     let mut detected_unit = Unit::Millimeters;
     let mut has_explicit_unit = false;
     let mut feedrates = Vec::new();
+    let mut plunge_feedrates = Vec::new();
+    let mut cut_feedrates = Vec::new();
     let mut spindle_commands = Vec::new();
 
     let mut min_z: Option<f64> = None;
     let mut max_z: Option<f64> = None;
     let mut z_clearance: Option<f64> = None;
     let mut z_cut: Option<f64> = None;
+    let mut rapid_z_levels: Vec<f64> = Vec::new();
+    let mut cut_z_levels: Vec<f64> = Vec::new();
 
     let mut current_contour: Option<Vec<Point3D>> = None;
     let mut current_contour_feed: Option<f64> = None;
@@ -194,15 +202,47 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
             min_z = Some(min_z.map_or(z_val, |m| m.min(z_val)));
             max_z = Some(max_z.map_or(z_val, |m| m.max(z_val)));
 
-            if z_val > 0.0 {
-                z_clearance = Some(z_clearance.map_or(z_val, |m| m.max(z_val)));
-            } else if z_val < 0.0 {
-                z_cut = Some(z_cut.map_or(z_val, |m| m.min(z_val)));
+            match parsed.motion {
+                Some(MotionMode::Rapid) => {
+                    if !rapid_z_levels.iter().any(|&rz| (rz - z_val).abs() < 1e-4) {
+                        rapid_z_levels.push(z_val);
+                    }
+                    if z_val > 0.0 {
+                        z_clearance = Some(z_clearance.map_or(z_val, |m| m.min(z_val)));
+                    }
+                }
+                Some(MotionMode::Linear) | Some(MotionMode::ArcCw) | Some(MotionMode::ArcCcw) => {
+                    if z_val <= 0.0 || (parsed.x.is_some() || parsed.y.is_some()) {
+                        if !cut_z_levels.iter().any(|&cz| (cz - z_val).abs() < 1e-4) {
+                            cut_z_levels.push(z_val);
+                        }
+                    }
+                    if z_val < 0.0 {
+                        z_cut = Some(z_cut.map_or(z_val, |m| m.min(z_val)));
+                    }
+                }
+                _ => {}
+            }
+
+            // Distinguish plunge feedrate vs XY cut feedrate
+            if let Some(f_val) = parsed.f {
+                if parsed.z.is_some() && z_val < current_pos.z && parsed.x.is_none() && parsed.y.is_none() {
+                    if !plunge_feedrates.contains(&f_val) {
+                        plunge_feedrates.push(f_val);
+                    }
+                } else if parsed.x.is_some() || parsed.y.is_some() {
+                    if !cut_feedrates.contains(&f_val) {
+                        cut_feedrates.push(f_val);
+                    }
+                }
             }
         }
 
         if let Some(feed) = parsed.f {
             current_contour_feed = Some(feed);
+            if (parsed.x.is_some() || parsed.y.is_some()) && !cut_feedrates.contains(&feed) {
+                cut_feedrates.push(feed);
+            }
         }
 
         match parsed.motion {
@@ -295,7 +335,11 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
         contours,
         rapid_points,
         all_points,
+        rapid_z_levels,
+        cut_z_levels,
         feedrates,
+        plunge_feedrates,
+        cut_feedrates,
         spindle_commands,
         min_z,
         max_z,

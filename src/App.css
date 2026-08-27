@@ -184,6 +184,12 @@
   border: 1px solid var(--color-border);
 }
 
+.hud-cycles-badge {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
 .hud-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -219,6 +225,93 @@
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
   gap: 2px;
+}
+
+/* Z-Kinematics Section */
+.hud-z-section {
+  padding: var(--spacing-3) var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  border: 1px solid var(--color-border);
+}
+
+.hud-z-header {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--spacing-2);
+}
+
+.hud-z-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-2);
+}
+
+.hud-z-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-bg-surface);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.z-badge-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-display);
+}
+
+.z-value {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+}
+
+.z-desc {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.hud-stepdowns-wrapper {
+  padding-top: var(--spacing-1);
+}
+
+.stepdowns-list {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.stepdown-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.stepdown-pass-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-accent-primary);
+  background: var(--color-accent-primary-subtle);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.stepdown-z-level {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.stepdown-delta-badge {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
 }
 
 .hud-empty-state {
@@ -557,7 +650,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
-  color: #a7f3d0; /* Soft terminal green */
+  color: #a7f3d0;
   white-space: pre-wrap;
 }
 

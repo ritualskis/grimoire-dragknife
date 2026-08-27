@@ -1,4 +1,4 @@
-# Grimoire DragKnife 🔪⚡
+# Grimoire DragKnife
 
 **Grimoire DragKnife** is a high-precision, barebones CNC G-Code Drag Knife post-processor, live toolpath analyzer, and Heads-Up Display (HUD) studio developed for [Ritual Skis](https://github.com/ritualskis).
 
@@ -6,7 +6,7 @@ Built with **Rust** and **Tauri v2 + SolidJS**, Grimoire DragKnife adheres to th
 
 ---
 
-## 🎯 Design Philosophy: Super Barebones & Vectric-Accurate
+## Design Philosophy: Super Barebones & Vectric-Accurate
 
 Traditional CAM software generates toolpaths designed for circular rotary cutters or lasers positioned directly at the machine spindle center $(X, Y)$. When utilizing a trailing drag knife blade (such as a Donek D1/D2/D4 knife, Roland plotter blade, or utility blade attachment), the razor cutting tip lags behind the spindle center by fixed distance $e$ (the **Blade Offset**).
 
@@ -25,7 +25,7 @@ Grimoire DragKnife performs the exact transformations implemented by the Vectric
 
 ---
 
-## 📊 Heads-Up Display (HUD) Telemetry
+## Heads-Up Display (HUD) Telemetry
 
 Upon opening any `.gcode`, `.nc`, or `.tap` toolpath file, Grimoire DragKnife instantly analyzes the geometry and renders a live **Heads-Up Display (HUD)**:
 
@@ -35,11 +35,11 @@ Upon opening any `.gcode`, `.nc`, or `.tap` toolpath file, Grimoire DragKnife in
 - **Corner Swivel Counter**: Counts exact sharp corners requiring stationary swivel moves.
 - **Contour Hierarchy**: Number of continuous contours, distinguishing closed loops from open slit paths.
 - **Cycle Time Estimation**: Estimated machining duration computed from programmed feedrates.
-- **Z-Plunge / Retract Summary**: Cut depth $Z_{cut}$ and rapid clearance height $Z_{safe}$.
+- **Z-Plunge & Stepdowns**: Stepdown breakdown, Travel height $Z_{travel}$, Safe clearance $Z_{safe}$, and Plunge depth $Z_{cut}$.
 
 ---
 
-## 🏗️ Architecture: Standalone & Integrated
+## Architecture: Standalone & Integrated
 
 Grimoire DragKnife is designed for dual deployment:
 
@@ -74,7 +74,7 @@ allowing Grimoire CAM workflows (such as ski base cutouts and topsheet processin
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
@@ -110,6 +110,6 @@ npm run test:all
 
 ---
 
-## 📄 License
+## License
 
 MIT © [Ritual Skis](https://github.com/ritualskis)

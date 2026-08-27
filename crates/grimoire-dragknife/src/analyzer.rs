@@ -1,6 +1,6 @@
 use crate::geometry::{deg_to_rad, dist_3d, normalize_2d, turn_angle, vector_2d};
 use crate::parser::ParsedProgram;
-use crate::types::{BoundingBox, DragKnifeConfig, HUDStats, Unit};
+use crate::types::{BoundingBox, DragKnifeConfig, HUDStats, StepdownInfo, Unit};
 
 pub fn analyze_program(program: &ParsedProgram, config: &DragKnifeConfig) -> HUDStats {
     let total_lines = program.lines.len();
@@ -93,6 +93,68 @@ pub fn analyze_program(program: &ParsedProgram, config: &DragKnifeConfig) -> HUD
     let rapid_time_min = total_rapid_distance / rapid_feed;
     let estimated_cycle_time_seconds = (cut_time_min + rapid_time_min) * 60.0;
 
+    // --- Z-Kinematics & Stepdowns Analysis ---
+    let travel_height = program
+        .rapid_z_levels
+        .iter()
+        .copied()
+        .max_by(|a, b| a.partial_cmp(b).unwrap())
+        .or(program.max_z);
+
+    let safe_height = program.z_clearance;
+    let plunge_depth = program.z_cut.or(program.min_z);
+
+    // Extract unique cutting Z heights sorted descending (e.g. -0.5, -1.0, -1.5)
+    let mut unique_cut_z = Vec::new();
+    for &z in &program.cut_z_levels {
+        if z <= 0.0 {
+            if !unique_cut_z.iter().any(|&uz: &f64| (uz - z).abs() < 1e-4) {
+                unique_cut_z.push(z);
+            }
+        }
+    }
+    // Also include contour vertices minimum Z if not already collected
+    for c in &program.contours {
+        for v in &c.vertices {
+            if v.z <= 0.0 {
+                if !unique_cut_z.iter().any(|&uz: &f64| (uz - v.z).abs() < 1e-4) {
+                    unique_cut_z.push(v.z);
+                }
+            }
+        }
+    }
+    // Sort descending (closest to 0 down to deepest negative)
+    unique_cut_z.sort_by(|a, b| b.partial_cmp(a).unwrap());
+
+    // If no negative Z found, fallback to plunge_depth or default
+    if unique_cut_z.is_empty() {
+        if let Some(pz) = plunge_depth {
+            unique_cut_z.push(pz);
+        }
+    }
+
+    let mut stepdowns = Vec::new();
+    let mut prev_z = 0.0;
+    let mut max_stepdown_val: Option<f64> = None;
+
+    for (idx, &z_val) in unique_cut_z.iter().enumerate() {
+        let delta = (prev_z - z_val).abs();
+        max_stepdown_val = Some(max_stepdown_val.map_or(delta, |m| m.max(delta)));
+        stepdowns.push(StepdownInfo {
+            pass_number: idx + 1,
+            z_level: z_val,
+            stepdown_delta: delta,
+            feedrate: program.cut_feedrates.get(idx).copied().or(program.feedrates.first().copied()),
+        });
+        prev_z = z_val;
+    }
+
+    let depth_pass_count = stepdowns.len().max(1);
+    let cycle_count = program.contours.len().max(depth_pass_count);
+
+    let plunge_feedrate = program.plunge_feedrates.first().copied();
+    let cut_feedrate = program.cut_feedrates.first().copied().or(program.feedrates.first().copied());
+
     HUDStats {
         unit: unit_str,
         total_lines,
@@ -105,8 +167,15 @@ pub fn analyze_program(program: &ParsedProgram, config: &DragKnifeConfig) -> HUD
         open_contour_count: open_count,
         corner_count,
         swivel_arc_count: corner_count,
-        z_clearance: program.z_clearance,
-        z_cut: program.z_cut,
+        cycle_count,
+        depth_pass_count,
+        stepdowns,
+        travel_height,
+        safe_height,
+        plunge_depth,
+        max_stepdown: max_stepdown_val,
+        plunge_feedrate,
+        cut_feedrate,
         feedrates: program.feedrates.clone(),
         spindle_commands: program.spindle_commands.clone(),
     }

@@ -32,7 +32,6 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
     <div class="surface-card param-container">
       <div class="param-header flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="hud-badge-icon">⚙️</span>
           <h2 class="param-title">DRAG KNIFE PARAMETERS</h2>
         </div>
         <div class="unit-toggle flex items-center">
@@ -253,7 +252,7 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
           onClick={props.onProcess}
           type="button"
         >
-          {props.isProcessing ? "PROCESSING..." : "⚡ GENERATE DRAG KNIFE TOOLPATH"}
+          {props.isProcessing ? "PROCESSING..." : "GENERATE DRAG KNIFE TOOLPATH"}
         </button>
       </div>
     </div>

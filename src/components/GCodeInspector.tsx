@@ -50,7 +50,6 @@ export const GCodeInspector: Component<GCodeInspectorProps> = (props) => {
     <div class="surface-card inspector-container">
       <div class="inspector-header flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="hud-badge-icon">📝</span>
           <span class="inspector-title">G-CODE INSPECTOR & EXPORT</span>
         </div>
 
@@ -75,7 +74,7 @@ export const GCodeInspector: Component<GCodeInspectorProps> = (props) => {
         {/* Export Actions */}
         <div class="flex items-center gap-2">
           <button class="action-btn" onClick={handleCopy} type="button">
-            {copied() ? "✓ Copied!" : "📋 Copy"}
+            {copied() ? "Copied" : "Copy"}
           </button>
           <button
             class="action-btn btn-accent-mini"
@@ -83,7 +82,7 @@ export const GCodeInspector: Component<GCodeInspectorProps> = (props) => {
             onClick={handleDownload}
             type="button"
           >
-            💾 Export .NC
+            Export .NC
           </button>
         </div>
       </div>

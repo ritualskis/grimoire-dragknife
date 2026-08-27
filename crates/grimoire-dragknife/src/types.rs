@@ -82,6 +82,14 @@ impl Default for BoundingBox {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StepdownInfo {
+    pub pass_number: usize,
+    pub z_level: f64,
+    pub stepdown_delta: f64,
+    pub feedrate: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DragKnifeConfig {
     /// Blade offset distance (spindle center to blade tip) in active units (e.g. 1.588 mm / 0.0625 in)
     pub blade_offset: f64,
@@ -123,8 +131,24 @@ pub struct HUDStats {
     pub open_contour_count: usize,
     pub corner_count: usize,
     pub swivel_arc_count: usize,
-    pub z_clearance: Option<f64>,
-    pub z_cut: Option<f64>,
+    /// Number of cutting cycles (plunge-to-retract cycles)
+    pub cycle_count: usize,
+    /// Number of discrete cutting depth levels
+    pub depth_pass_count: usize,
+    /// Detailed stepdown passes list with each Z level and delta
+    pub stepdowns: Vec<StepdownInfo>,
+    /// High rapid travel height across machine bed (e.g. G0 Z38.10)
+    pub travel_height: Option<f64>,
+    /// Safe approach clearance height (e.g. G0 Z5.0)
+    pub safe_height: Option<f64>,
+    /// Maximum / deepest cut depth (e.g. Z -1.5)
+    pub plunge_depth: Option<f64>,
+    /// Maximum stepdown drop between consecutive passes
+    pub max_stepdown: Option<f64>,
+    /// Primary plunge feedrate (feed during downward Z motion)
+    pub plunge_feedrate: Option<f64>,
+    /// Primary XY cutting feedrate
+    pub cut_feedrate: Option<f64>,
     pub feedrates: Vec<f64>,
     pub spindle_commands: Vec<String>,
 }

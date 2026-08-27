@@ -25,6 +25,13 @@ export interface BoundingBox {
   depth: number;
 }
 
+export interface StepdownInfo {
+  pass_number: number;
+  z_level: number;
+  stepdown_delta: number;
+  feedrate: number | null;
+}
+
 export interface DragKnifeConfig {
   blade_offset: number;
   tolerance_angle_deg: number;
@@ -46,8 +53,15 @@ export interface HUDStats {
   open_contour_count: number;
   corner_count: number;
   swivel_arc_count: number;
-  z_clearance: number | null;
-  z_cut: number | null;
+  cycle_count: number;
+  depth_pass_count: number;
+  stepdowns: StepdownInfo[];
+  travel_height: number | null;
+  safe_height: number | null;
+  plunge_depth: number | null;
+  max_stepdown: number | null;
+  plunge_feedrate: number | null;
+  cut_feedrate: number | null;
   feedrates: number[];
   spindle_commands: string[];
 }

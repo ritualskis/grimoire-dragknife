@@ -6,6 +6,7 @@ import type {
   HUDStats,
   Point2D,
   Point3D,
+  StepdownInfo,
   SwivelArcInfo,
 } from "../types/dragknife";
 
@@ -34,7 +35,11 @@ interface ParsedProgram {
   contours: Contour[];
   rapidPoints: Point3D[];
   allPoints: Point3D[];
+  rapidZLevels: number[];
+  cutZLevels: number[];
   feedrates: number[];
+  plungeFeedrates: number[];
+  cutFeedrates: number[];
   spindleCommands: string[];
   minZ?: number;
   maxZ?: number;
@@ -84,7 +89,11 @@ export function parseGCode(content: string): ParsedProgram {
   let detectedUnit: "mm" | "in" = "mm";
   let hasExplicitUnit = false;
   const feedrates: number[] = [];
+  const plungeFeedrates: number[] = [];
+  const cutFeedrates: number[] = [];
   const spindleCommands: string[] = [];
+  const rapidZLevels: number[] = [];
+  const cutZLevels: number[] = [];
 
   let minZ: number | undefined;
   let maxZ: number | undefined;
@@ -202,15 +211,42 @@ export function parseGCode(content: string): ParsedProgram {
       const zVal = parsed.z;
       minZ = minZ !== undefined ? Math.min(minZ, zVal) : zVal;
       maxZ = maxZ !== undefined ? Math.max(maxZ, zVal) : zVal;
-      if (zVal > 0) {
-        zClearance = zClearance !== undefined ? Math.max(zClearance, zVal) : zVal;
-      } else if (zVal < 0) {
-        zCut = zCut !== undefined ? Math.min(zCut, zVal) : zVal;
+
+      if (parsed.motion === "Rapid") {
+        if (!rapidZLevels.some((rz) => Math.abs(rz - zVal) < 1e-4)) {
+          rapidZLevels.push(zVal);
+        }
+        if (zVal > 0) {
+          zClearance = zClearance !== undefined ? Math.min(zClearance, zVal) : zVal;
+        }
+      } else {
+        if (zVal <= 0 || parsed.x !== undefined || parsed.y !== undefined) {
+          if (!cutZLevels.some((cz) => Math.abs(cz - zVal) < 1e-4)) {
+            cutZLevels.push(zVal);
+          }
+        }
+        if (zVal < 0) {
+          zCut = zCut !== undefined ? Math.min(zCut, zVal) : zVal;
+        }
+      }
+
+      if (parsed.f !== undefined) {
+        if (zVal < currentPos.z && parsed.x === undefined && parsed.y === undefined) {
+          if (!plungeFeedrates.includes(parsed.f)) plungeFeedrates.push(parsed.f);
+        } else if (parsed.x !== undefined || parsed.y !== undefined) {
+          if (!cutFeedrates.includes(parsed.f)) cutFeedrates.push(parsed.f);
+        }
       }
     }
 
     if (parsed.f !== undefined) {
       currentContourFeed = parsed.f;
+      if (
+        (parsed.x !== undefined || parsed.y !== undefined) &&
+        !cutFeedrates.includes(parsed.f)
+      ) {
+        cutFeedrates.push(parsed.f);
+      }
     }
 
     if (parsed.motion === "Rapid") {
@@ -297,7 +333,11 @@ export function parseGCode(content: string): ParsedProgram {
     contours,
     rapidPoints,
     allPoints,
+    rapidZLevels,
+    cutZLevels,
     feedrates,
+    plungeFeedrates,
+    cutFeedrates,
     spindleCommands,
     minZ,
     maxZ,
@@ -441,6 +481,54 @@ export function analyzeProgram(program: ParsedProgram, config: DragKnifeConfig):
   const rapidTimeMin = totalRapidDistance / rapidFeed;
   const estimatedCycleTimeSeconds = (cutTimeMin + rapidTimeMin) * 60;
 
+  // --- Z-Kinematics & Stepdown Analysis ---
+  const travelHeight =
+    program.rapidZLevels.length > 0
+      ? Math.max(...program.rapidZLevels)
+      : program.maxZ ?? null;
+
+  const safeHeight = program.zClearance ?? null;
+  const plungeDepth = program.zCut ?? program.minZ ?? null;
+
+  const uniqueCutZ: number[] = [];
+  for (const z of program.cutZLevels) {
+    if (z <= 0 && !uniqueCutZ.some((uz) => Math.abs(uz - z) < 1e-4)) {
+      uniqueCutZ.push(z);
+    }
+  }
+  for (const c of program.contours) {
+    for (const v of c.vertices) {
+      if (v.z <= 0 && !uniqueCutZ.some((uz) => Math.abs(uz - v.z) < 1e-4)) {
+        uniqueCutZ.push(v.z);
+      }
+    }
+  }
+  uniqueCutZ.sort((a, b) => b - a); // Descending (0 -> deepest)
+
+  if (uniqueCutZ.length === 0 && plungeDepth !== null) {
+    uniqueCutZ.push(plungeDepth);
+  }
+
+  const stepdowns: StepdownInfo[] = [];
+  let prevZ = 0;
+  let maxStepdown: number | null = null;
+
+  for (let i = 0; i < uniqueCutZ.length; i++) {
+    const zVal = uniqueCutZ[i];
+    const delta = Math.abs(prevZ - zVal);
+    maxStepdown = maxStepdown !== null ? Math.max(maxStepdown, delta) : delta;
+    stepdowns.push({
+      pass_number: i + 1,
+      z_level: zVal,
+      stepdown_delta: delta,
+      feedrate: program.cutFeedrates[i] ?? program.feedrates[0] ?? null,
+    });
+    prevZ = zVal;
+  }
+
+  const depthPassCount = Math.max(stepdowns.length, 1);
+  const cycleCount = Math.max(program.contours.length, depthPassCount);
+
   return {
     unit: unitStr,
     total_lines: program.lines.length,
@@ -453,8 +541,15 @@ export function analyzeProgram(program: ParsedProgram, config: DragKnifeConfig):
     open_contour_count: openCount,
     corner_count: cornerCount,
     swivel_arc_count: cornerCount,
-    z_clearance: program.zClearance ?? null,
-    z_cut: program.zCut ?? null,
+    cycle_count: cycleCount,
+    depth_pass_count: depthPassCount,
+    stepdowns,
+    travel_height: travelHeight,
+    safe_height: safeHeight,
+    plunge_depth: plungeDepth,
+    max_stepdown: maxStepdown,
+    plunge_feedrate: program.plungeFeedrates[0] ?? null,
+    cut_feedrate: program.cutFeedrates[0] ?? program.feedrates[0] ?? null,
     feedrates: program.feedrates,
     spindle_commands: program.spindleCommands,
   };
