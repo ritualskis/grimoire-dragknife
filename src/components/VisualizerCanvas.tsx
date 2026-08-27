@@ -39,16 +39,18 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   const [showRapids, setShowRapids] = createSignal(true);
   const [showGrid, setShowGrid] = createSignal(true);
 
+  let wrapperRef: HTMLDivElement | undefined;
   let resizeRaf: number | null = null;
   const handleResize = () => {
-    if (!containerRef || !plotter) return;
+    if (!wrapperRef || !plotter) return;
     if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(() => {
       resizeRaf = null;
-      if (!containerRef || !plotter) return;
-      const rect = containerRef.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        plotter.resize(rect.width, rect.height);
+      if (!wrapperRef || !plotter) return;
+      const w = wrapperRef.clientWidth;
+      const h = wrapperRef.clientHeight;
+      if (w > 0 && h > 0) {
+        plotter.resize(w, h);
       }
     });
   };
@@ -102,10 +104,9 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   };
 
   onMount(() => {
-    if (!canvasRef || !containerRef) return;
-    const rect = containerRef.getBoundingClientRect();
-    const initW = rect.width > 0 ? rect.width : 800;
-    const initH = rect.height > 0 ? rect.height : 600;
+    if (!canvasRef || !wrapperRef) return;
+    const initW = wrapperRef.clientWidth > 0 ? wrapperRef.clientWidth : 800;
+    const initH = wrapperRef.clientHeight > 0 ? wrapperRef.clientHeight : 500;
 
     plotter = new GrimoirePlotter2D(canvasRef, {
       unit: props.unit,
@@ -134,7 +135,7 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
     resizeObserver = new ResizeObserver(() => {
       handleResize();
     });
-    resizeObserver.observe(containerRef);
+    resizeObserver.observe(wrapperRef);
 
     window.addEventListener("resize", handleResize);
   });
@@ -268,7 +269,7 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       </div>
 
       {/* Interactive Canvas Viewport */}
-      <div class="canvas-wrapper">
+      <div class="canvas-wrapper" ref={wrapperRef}>
         <canvas ref={canvasRef} class="interactive-canvas" />
 
         {/* Precision Coordinate HUD */}
