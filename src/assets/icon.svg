@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="20" fill="#0e1014"/>
+  <rect x="2" y="2" width="96" height="96" rx="18" stroke="#e63946" stroke-width="3" stroke-opacity="0.6"/>
+  <!-- Razor Blade / Drag Knife Silhouette -->
+  <path d="M 30 25 L 70 25 L 75 40 L 70 75 L 30 75 L 25 40 Z" fill="#1a1e26" stroke="#f0f2f5" stroke-width="3"/>
+  <!-- Center mounting slot -->
+  <rect x="42" y="35" width="16" height="30" rx="4" fill="#0e1014" stroke="#e63946" stroke-width="2"/>
+  <!-- Cutting tip indicator -->
+  <polygon points="50,88 44,75 56,75" fill="#e63946"/>
+</svg>
