@@ -56,9 +56,8 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
       {/* Preset Buttons */}
       <div class="presets-section">
         <Tooltip
-          title="BLADE CASTER PRESETS"
-          desc="Standard manufacturer blade offset (e) presets for popular CNC drag knife holders (Donek D1/D2/D4, Roland vinyl plotters, and utility blade cartridges)."
-          source="Factory blade specs or calibrated measurements."
+          title="Knife Presets"
+          desc="Quick settings for popular drag knife tools like Donek and Roland."
         >
           <label class="param-label">TOOL PRESETS (Donek / Roland)</label>
         </Tooltip>
@@ -68,7 +67,6 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
               <Tooltip
                 title={preset.name}
                 desc={preset.description}
-                source={`Offset: ${props.unit === "in" ? `${preset.blade_offset_in}"` : `${preset.blade_offset_mm}mm`}`}
               >
                 <button
                   class="preset-btn"
@@ -92,9 +90,8 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
         {/* Blade Offset */}
         <div class="param-group">
           <Tooltip
-            title="BLADE OFFSET (e)"
-            desc="Physical distance from the CNC spindle rotation axis to the razor blade's cutting edge. The spindle leads ahead of this distance, and corner swivel arcs use this radius (r = e)."
-            source="Calibrate with test cuts or knife holder specifications."
+            title="Blade Offset"
+            desc="Distance from the center of the spindle to the knife tip. Tells the machine how far ahead to steer."
           >
             <div class="flex items-center justify-between">
               <label class="param-label" for="blade-offset">
@@ -125,9 +122,8 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
         {/* Tolerance Angle */}
         <div class="param-group">
           <Tooltip
-            title="SWIVEL TOLERANCE ANGLE"
-            desc="Corner deflection angle threshold. Directional turns sharper than this angle trigger a stationary G2/G3 swivel arc to orient the blade. Shallow angles continue tangent without pausing."
-            source="Vectric Gadget default is 20°."
+            title="Corner Swivel Angle"
+            desc="Corners sharper than this angle will make the blade lift and turn in place. Gentler curves are cut continuously."
           >
             <div class="flex items-center justify-between">
               <label class="param-label" for="tolerance-angle">
@@ -174,9 +170,8 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
         {/* Swivel Z-Lift Height */}
         <div class="param-group">
           <Tooltip
-            title="SWIVEL Z-LIFT (MICRO-RETRACT)"
-            desc="Slightly lifts the knife along the Z-axis during corner swivels to reduce lateral drag and prevent tearing or dimpling on soft or fragile materials (foam, veneer, leather, cardboard)."
-            source="Optional Vectric feature for delicate stocks."
+            title="Corner Micro-Lift"
+            desc="Lifts the knife slightly when turning corners to avoid tearing or marking soft materials like P-Tex or veneer."
           >
             <div class="flex items-center justify-between">
               <label class="param-label flex items-center gap-2" for="enable-z-lift">
@@ -223,9 +218,8 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
         {/* Swivel Feedrate */}
         <div class="param-group">
           <Tooltip
-            title="SWIVEL FEED OVERRIDE"
-            desc="Dedicated feedrate used during stationary corner pivot arcs. Lowering this feedrate ensures smooth, precise corner swiveling without blade chatter or vibration."
-            source="Custom feed override for G2/G3 swivel moves."
+            title="Corner Turn Speed"
+            desc="Slows down the machine during corner turns for cleaner corners without chatter."
           >
             <div class="flex items-center justify-between">
               <label class="param-label flex items-center gap-2" for="enable-swivel-feed">
@@ -269,9 +263,8 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
       {/* Action Buttons */}
       <div class="param-actions flex items-center justify-between">
         <Tooltip
-          title="SPINDLE SAFETY INTERLOCK"
-          desc="Removes M3/M4 spindle start commands from the output G-Code to ensure the machine spindle is completely disabled."
-          source="Crucial drag knife hardware safety rule."
+          title="Disable Spindle"
+          desc="Removes spindle start commands (M3/M4) so the router never spins the blade."
         >
           <label class="spindle-safe-toggle flex items-center gap-2">
             <input

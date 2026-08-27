@@ -23,25 +23,22 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
         <Show when={props.stats}>
           <div class="flex items-center gap-2">
             <Tooltip
-              title="COORDINATE SYSTEM UNITS"
-              desc="Active machine coordinate format (G21 metric millimeters or G20 imperial inches)."
-              source="Inferred from G20/G21 in G-Code or unit toggle."
+              title="Units"
+              desc="Machine measurement system (millimeters or inches)."
             >
               <span class="hud-badge hud-unit-badge">{props.stats?.unit}</span>
             </Tooltip>
 
             <Tooltip
-              title="TOTAL G-CODE LINES"
-              desc="Total line count of the source CNC toolpath file."
-              source="Loaded input file."
+              title="G-Code Lines"
+              desc="Total lines of instructions in this file."
             >
               <span class="hud-badge hud-lines-badge">{props.stats?.total_lines} Lines</span>
             </Tooltip>
 
             <Tooltip
-              title="CUTTING CYCLES & DEPTH PASSES"
-              desc="Number of distinct plunge-to-retract cutting cycles and discrete Z depth passes."
-              source="Analyzed from toolpath Z plunge and retract sequences."
+              title="Cut Passes & Cycles"
+              desc="How many times the knife plunges down and how many depth passes it takes."
             >
               <span class="hud-badge hud-cycles-badge">
                 {props.stats?.cycle_count} {props.stats?.cycle_count === 1 ? "Cycle" : "Cycles"} (
@@ -66,9 +63,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
             <div class="hud-grid">
               {/* Bounding Box Dimensions */}
               <Tooltip
-                title="BOUNDING ENVELOPE"
-                desc="Total physical bounding box dimensions and coordinate extents across X and Y axes."
-                source="Extrema of all X/Y coordinates in loaded G-Code."
+                title="Overall Size (X × Y)"
+                desc="Physical width and length of the entire cutout on the CNC bed."
               >
                 <div class="hud-stat-box surface-well">
                   <span class="hud-stat-label">BOUNDING ENVELOPE</span>
@@ -85,9 +81,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
 
               {/* Cutting & Travel Distance */}
               <Tooltip
-                title="CUTTING LENGTH & RAPID TRAVEL"
-                desc="Accumulated distance of all feed-rate cutting moves (G1, G2, G3) vs non-cutting rapid positioning transit (G0)."
-                source="Sum of linear and circular toolpath segments in G-Code."
+                title="Total Cut Distance"
+                desc="Total distance the knife moves while cutting into material vs moving in the air (rapids)."
               >
                 <div class="hud-stat-box surface-well">
                   <span class="hud-stat-label">CUTTING LENGTH</span>
@@ -102,9 +97,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
 
               {/* Estimated Cycle Time */}
               <Tooltip
-                title="ESTIMATED RUN TIME"
-                desc="Projected total cycle duration calculated from programmed cut feedrates (F...) and rapid traverse speeds."
-                source="Programmed feedrates and total distance in G-Code."
+                title="Estimated Time"
+                desc="Approximate time needed to cut this file based on programmed feed rates."
               >
                 <div class="hud-stat-box surface-well">
                   <span class="hud-stat-label">ESTIMATED RUN TIME</span>
@@ -119,9 +113,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
 
               {/* Corner Swivels Count */}
               <Tooltip
-                title="CORNER SWIVELS & CONTOURS"
-                desc="Count of stationary circular pivot arcs (G2/G3) generated at sharp corners where turn angle exceeds the tolerance threshold. Spindle halts forward feed and swivels the blade around the corner vertex."
-                source="Calculated from Swivel Tolerance Angle in Parameters."
+                title="Corner Swivels"
+                desc="Sharp corners where the machine pauses and turns the blade to face the new cut direction."
               >
                 <div class="hud-stat-box surface-well">
                   <span class="hud-stat-label">CORNER SWIVELS</span>
@@ -145,18 +138,16 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
                 </div>
                 <div class="flex items-center gap-3 text-xs text-secondary">
                   <Tooltip
-                    title="PLUNGE FEEDRATE"
-                    desc="Vertical feedrate used when plunging the blade downward into the stock along the Z axis."
-                    source="Programmed F value on vertical G1 Z moves."
+                    title="Plunge Speed"
+                    desc="How fast the knife enters the material vertically."
                   >
                     <span>Plunge Feed: <strong class="text-primary">{stats().plunge_feedrate ? `${stats().plunge_feedrate} ${props.unit}/min` : "N/A"}</strong></span>
                   </Tooltip>
 
                   <span class="status-indicator"></span>
                   <Tooltip
-                    title="SPINDLE SAFETY INTERLOCK"
-                    desc="Confirms spindle rotation (M3/M4) is disabled so the drag knife collet is never rotated."
-                    source="Configured via 'Strip Spindle RPM' safety toggle."
+                    title="Spindle Rotation: Off"
+                    desc="Spindle RPM is disabled so the knife holder does not spin."
                   >
                     <span class="text-success font-semibold">SPINDLE OFF</span>
                   </Tooltip>
@@ -166,9 +157,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
               <div class="hud-z-grid">
                 {/* Travel Height */}
                 <Tooltip
-                  title="TRAVEL HEIGHT (G0)"
-                  desc="Highest Z clearance plane used for rapid transit across the machine bed between separate cuts."
-                  source="Programmed as 'Rapid Z Gap' or 'Home Z' in CAM software."
+                  title="Rapid Transit Height"
+                  desc="High safety clearance above the table when moving between cuts."
                 >
                   <div class="hud-z-stat-card">
                     <span class="z-badge-label">TRAVEL HEIGHT (G0)</span>
@@ -183,9 +173,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
 
                 {/* Safe Height */}
                 <Tooltip
-                  title="SAFE HEIGHT (Z_SAFE)"
-                  desc="Approach clearance plane (Z > 0) where rapid motion stops before controlled vertical entry into material."
-                  source="Programmed as 'Clearance Plane' in CAM software."
+                  title="Entry / Retract Height"
+                  desc="Low clearance height just above the material surface."
                 >
                   <div class="hud-z-stat-card">
                     <span class="z-badge-label">SAFE HEIGHT (Z_SAFE)</span>
@@ -200,9 +189,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
 
                 {/* Target Plunge Depth */}
                 <Tooltip
-                  title="PLUNGE DEPTH (Z_CUT)"
-                  desc="Lowest cutting floor reached during cutting moves, representing final cut-through depth into sacrificial backing."
-                  source="Programmed as 'Cut Depth' in CAM profile toolpath."
+                  title="Cut Depth"
+                  desc="How deep the blade cuts into the material (final cut floor)."
                 >
                   <div class="hud-z-stat-card">
                     <span class="z-badge-label">PLUNGE DEPTH (Z_CUT)</span>
@@ -217,9 +205,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
 
                 {/* Cutting Cycles & Passes */}
                 <Tooltip
-                  title="CUTTING CYCLES & PASSES"
-                  desc="Total number of plunge-to-retract cutting cycles and distinct Z depth levels."
-                  source="Count of rapid-to-plunge sequences in G-Code."
+                  title="Cut Passes & Cycles"
+                  desc="Total number of plunge-to-retract cut cycles and discrete depth levels."
                 >
                   <div class="hud-z-stat-card">
                     <span class="z-badge-label">CUTTING CYCLES</span>
@@ -237,9 +224,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
                   <span class="text-xs font-bold text-tertiary">EACH STEPDOWN PASS HEIGHT (Δ INCREMENT)</span>
                   <Show when={stats().max_stepdown !== null}>
                     <Tooltip
-                      title="MAXIMUM STEPDOWN INCREMENT"
-                      desc="Largest vertical depth increment cut in a single pass across the entire toolpath."
-                      source="Calculated from difference between consecutive Z levels."
+                      title="Max Stepdown Depth"
+                      desc="Largest cut depth taken in a single pass."
                     >
                       <span class="text-xs text-secondary font-mono">
                         Max Stepdown: <strong class="text-primary">{formatDistance(stats().max_stepdown!, props.unit)}</strong>
@@ -252,9 +238,8 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
                   <For each={stats().stepdowns}>
                     {(step) => (
                       <Tooltip
-                        title={`STEPDOWN PASS #${step.pass_number}`}
-                        desc={`Cutting pass at Z = ${step.z_level.toFixed(props.unit === "in" ? 4 : 2)} ${props.unit}, removing Δ ${formatDistance(step.stepdown_delta, props.unit)} material depth.`}
-                        source="Configured via 'Pass Depth' in CAM tool database."
+                        title={`Pass #${step.pass_number}`}
+                        desc={`Cuts at Z = ${step.z_level.toFixed(props.unit === "in" ? 4 : 2)} ${props.unit} (depth change: ${formatDistance(step.stepdown_delta, props.unit)}).`}
                       >
                         <div class="stepdown-chip surface-elevated flex items-center gap-2">
                           <span class="stepdown-pass-badge">Pass #{step.pass_number}</span>
