@@ -65,31 +65,51 @@ export const DragKnifeStudio: Component = () => {
       const stats = await analyzeGCode(content, config());
       setHudStats(stats);
 
-      // Set active unit based on analysis
+      // Set active unit and sheet dimensions based on analysis
       if (stats.unit.includes("G20") || stats.unit.includes("Imperial")) {
         setUnit("in");
         if (config().blade_offset > 0.5) {
           setConfig((c) => ({ ...c, blade_offset: 0.0625, swivel_lift_height: 0.02, swivel_feed: 15.0 }));
         }
-        setSheetConfig((s) => ({
-          ...s,
-          width: Math.max(13, Number((stats.bounds.width * 1.05).toFixed(1))),
-          height: Math.max(74, Number((stats.bounds.height * 1.05).toFixed(1))),
-        }));
+        const w = Number((Math.max(1, stats.bounds.width * 1.06 + 0.5)).toFixed(2));
+        const h = Number((Math.max(1, stats.bounds.height * 1.06 + 0.5)).toFixed(2));
+        setSheetConfig({
+          width: w,
+          height: h,
+          originX: Number(stats.bounds.min_x.toFixed(3)),
+          originY: Number(stats.bounds.min_y.toFixed(3)),
+          thickness: stats.plunge_depth ? Number(Math.abs(stats.plunge_depth).toFixed(3)) : 0.055,
+          datumPosition: "bottom-left",
+          zZero: "surface",
+          clearanceGap: stats.travel_height !== null ? Number(stats.travel_height.toFixed(2)) : 2.0,
+          plungeGap: stats.safe_height !== null ? Number(stats.safe_height.toFixed(2)) : 1.0,
+          homeX: 0,
+          homeY: 0,
+          homeZ: stats.travel_height !== null ? Number(stats.travel_height.toFixed(2)) : 10.0,
+          visible: true,
+        });
       } else {
         setUnit("mm");
         if (config().blade_offset < 0.2) {
           setConfig((c) => ({ ...c, blade_offset: 1.588, swivel_lift_height: 0.5, swivel_feed: 400.0 }));
         }
-        setSheetConfig((s) => ({
-          ...s,
-          width: Math.max(330, Number((stats.bounds.width * 1.05).toFixed(0))),
-          height: Math.max(1880, Number((stats.bounds.height * 1.05).toFixed(0))),
-          thickness: 1.4,
-          clearanceGap: 50,
-          plungeGap: 25,
-          homeZ: 250,
-        }));
+        const w = Number((Math.max(10, stats.bounds.width * 1.06 + 10)).toFixed(1));
+        const h = Number((Math.max(10, stats.bounds.height * 1.06 + 10)).toFixed(1));
+        setSheetConfig({
+          width: w,
+          height: h,
+          originX: Number(stats.bounds.min_x.toFixed(2)),
+          originY: Number(stats.bounds.min_y.toFixed(2)),
+          thickness: stats.plunge_depth ? Number(Math.abs(stats.plunge_depth).toFixed(2)) : 1.4,
+          datumPosition: "bottom-left",
+          zZero: "surface",
+          clearanceGap: stats.travel_height !== null ? Number(stats.travel_height.toFixed(1)) : 50.0,
+          plungeGap: stats.safe_height !== null ? Number(stats.safe_height.toFixed(1)) : 25.0,
+          homeX: 0,
+          homeY: 0,
+          homeZ: stats.travel_height !== null ? Number(stats.travel_height.toFixed(1)) : 250.0,
+          visible: true,
+        });
       }
 
       await handleProcess(content);
