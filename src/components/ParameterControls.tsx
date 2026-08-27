@@ -4,6 +4,7 @@ import {
   type Unit,
   DRAG_KNIFE_PRESETS,
 } from "../types/dragknife";
+import { Tooltip } from "./Tooltip";
 
 interface ParameterControlsProps {
   config: DragKnifeConfig;
@@ -54,23 +55,34 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
 
       {/* Preset Buttons */}
       <div class="presets-section">
-        <label class="param-label">TOOL PRESETS (Donek / Roland)</label>
+        <Tooltip
+          title="BLADE CASTER PRESETS"
+          desc="Standard manufacturer blade offset (e) presets for popular CNC drag knife holders (Donek D1/D2/D4, Roland vinyl plotters, and utility blade cartridges)."
+          source="Factory blade specs or calibrated measurements."
+        >
+          <label class="param-label">TOOL PRESETS (Donek / Roland)</label>
+        </Tooltip>
         <div class="preset-buttons-grid">
           <For each={DRAG_KNIFE_PRESETS}>
             {(preset) => (
-              <button
-                class="preset-btn"
-                onClick={() => handlePresetSelect(preset.id)}
-                title={preset.description}
-                type="button"
+              <Tooltip
+                title={preset.name}
+                desc={preset.description}
+                source={`Offset: ${props.unit === "in" ? `${preset.blade_offset_in}"` : `${preset.blade_offset_mm}mm`}`}
               >
-                <div class="preset-name">{preset.name}</div>
-                <div class="preset-offset">
-                  {props.unit === "in"
-                    ? `${preset.blade_offset_in.toFixed(4)}" offset`
-                    : `${preset.blade_offset_mm.toFixed(3)}mm offset`}
-                </div>
-              </button>
+                <button
+                  class="preset-btn"
+                  onClick={() => handlePresetSelect(preset.id)}
+                  type="button"
+                >
+                  <div class="preset-name">{preset.name}</div>
+                  <div class="preset-offset">
+                    {props.unit === "in"
+                      ? `${preset.blade_offset_in.toFixed(4)}" offset`
+                      : `${preset.blade_offset_mm.toFixed(3)}mm offset`}
+                  </div>
+                </button>
+              </Tooltip>
             )}
           </For>
         </div>
@@ -79,12 +91,18 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
       <div class="param-fields-grid">
         {/* Blade Offset */}
         <div class="param-group">
-          <div class="flex items-center justify-between">
-            <label class="param-label" for="blade-offset">
-              BLADE OFFSET ({props.unit})
-            </label>
-            <span class="param-hint">Center to blade tip</span>
-          </div>
+          <Tooltip
+            title="BLADE OFFSET (e)"
+            desc="Physical distance from the CNC spindle rotation axis to the razor blade's cutting edge. The spindle leads ahead of this distance, and corner swivel arcs use this radius (r = e)."
+            source="Calibrate with test cuts or knife holder specifications."
+          >
+            <div class="flex items-center justify-between">
+              <label class="param-label" for="blade-offset">
+                BLADE OFFSET ({props.unit})
+              </label>
+              <span class="param-hint">Center to blade tip</span>
+            </div>
+          </Tooltip>
           <div class="input-with-unit surface-well">
             <input
               id="blade-offset"
@@ -106,12 +124,18 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
 
         {/* Tolerance Angle */}
         <div class="param-group">
-          <div class="flex items-center justify-between">
-            <label class="param-label" for="tolerance-angle">
-              SWIVEL TOLERANCE ANGLE
-            </label>
-            <span class="param-hint">{props.config.tolerance_angle_deg}° threshold</span>
-          </div>
+          <Tooltip
+            title="SWIVEL TOLERANCE ANGLE"
+            desc="Corner deflection angle threshold. Directional turns sharper than this angle trigger a stationary G2/G3 swivel arc to orient the blade. Shallow angles continue tangent without pausing."
+            source="Vectric Gadget default is 20°."
+          >
+            <div class="flex items-center justify-between">
+              <label class="param-label" for="tolerance-angle">
+                SWIVEL TOLERANCE ANGLE
+              </label>
+              <span class="param-hint">{props.config.tolerance_angle_deg}° threshold</span>
+            </div>
+          </Tooltip>
           <div class="flex items-center gap-2">
             <input
               id="tolerance-angle"
@@ -149,28 +173,34 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
 
         {/* Swivel Z-Lift Height */}
         <div class="param-group">
-          <div class="flex items-center justify-between">
-            <label class="param-label flex items-center gap-2" for="enable-z-lift">
-              <input
-                id="enable-z-lift"
-                type="checkbox"
-                checked={props.config.swivel_lift_height !== null}
-                onChange={(e) => {
-                  const enabled = e.currentTarget.checked;
-                  props.onConfigChange({
-                    ...props.config,
-                    swivel_lift_height: enabled
-                      ? props.unit === "in"
-                        ? 0.02
-                        : 0.5
-                      : null,
-                  });
-                }}
-              />
-              SWIVEL Z-LIFT (CORNER RETRACT)
-            </label>
-            <span class="param-hint">Protects material surface</span>
-          </div>
+          <Tooltip
+            title="SWIVEL Z-LIFT (MICRO-RETRACT)"
+            desc="Slightly lifts the knife along the Z-axis during corner swivels to reduce lateral drag and prevent tearing or dimpling on soft or fragile materials (foam, veneer, leather, cardboard)."
+            source="Optional Vectric feature for delicate stocks."
+          >
+            <div class="flex items-center justify-between">
+              <label class="param-label flex items-center gap-2" for="enable-z-lift">
+                <input
+                  id="enable-z-lift"
+                  type="checkbox"
+                  checked={props.config.swivel_lift_height !== null}
+                  onChange={(e) => {
+                    const enabled = e.currentTarget.checked;
+                    props.onConfigChange({
+                      ...props.config,
+                      swivel_lift_height: enabled
+                        ? props.unit === "in"
+                          ? 0.02
+                          : 0.5
+                        : null,
+                    });
+                  }}
+                />
+                SWIVEL Z-LIFT (CORNER RETRACT)
+              </label>
+              <span class="param-hint">Protects material surface</span>
+            </div>
+          </Tooltip>
           <Show when={props.config.swivel_lift_height !== null}>
             <div class="input-with-unit surface-well">
               <input
@@ -192,24 +222,30 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
 
         {/* Swivel Feedrate */}
         <div class="param-group">
-          <div class="flex items-center justify-between">
-            <label class="param-label flex items-center gap-2" for="enable-swivel-feed">
-              <input
-                id="enable-swivel-feed"
-                type="checkbox"
-                checked={props.config.swivel_feed !== null}
-                onChange={(e) => {
-                  const enabled = e.currentTarget.checked;
-                  props.onConfigChange({
-                    ...props.config,
-                    swivel_feed: enabled ? (props.unit === "in" ? 15.0 : 400.0) : null,
-                  });
-                }}
-              />
-              SWIVEL FEED OVERRIDE
-            </label>
-            <span class="param-hint">Corner pivot speed</span>
-          </div>
+          <Tooltip
+            title="SWIVEL FEED OVERRIDE"
+            desc="Dedicated feedrate used during stationary corner pivot arcs. Lowering this feedrate ensures smooth, precise corner swiveling without blade chatter or vibration."
+            source="Custom feed override for G2/G3 swivel moves."
+          >
+            <div class="flex items-center justify-between">
+              <label class="param-label flex items-center gap-2" for="enable-swivel-feed">
+                <input
+                  id="enable-swivel-feed"
+                  type="checkbox"
+                  checked={props.config.swivel_feed !== null}
+                  onChange={(e) => {
+                    const enabled = e.currentTarget.checked;
+                    props.onConfigChange({
+                      ...props.config,
+                      swivel_feed: enabled ? (props.unit === "in" ? 15.0 : 400.0) : null,
+                    });
+                  }}
+                />
+                SWIVEL FEED OVERRIDE
+              </label>
+              <span class="param-hint">Corner pivot speed</span>
+            </div>
+          </Tooltip>
           <Show when={props.config.swivel_feed !== null}>
             <div class="input-with-unit surface-well">
               <input
@@ -232,19 +268,25 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
 
       {/* Action Buttons */}
       <div class="param-actions flex items-center justify-between">
-        <label class="spindle-safe-toggle flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={props.config.disable_spindle}
-            onChange={(e) =>
-              props.onConfigChange({
-                ...props.config,
-                disable_spindle: e.currentTarget.checked,
-              })
-            }
-          />
-          <span class="text-secondary text-sm">Strip Spindle RPM (M3/M4 Safety)</span>
-        </label>
+        <Tooltip
+          title="SPINDLE SAFETY INTERLOCK"
+          desc="Removes M3/M4 spindle start commands from the output G-Code to ensure the machine spindle is completely disabled."
+          source="Crucial drag knife hardware safety rule."
+        >
+          <label class="spindle-safe-toggle flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={props.config.disable_spindle}
+              onChange={(e) =>
+                props.onConfigChange({
+                  ...props.config,
+                  disable_spindle: e.currentTarget.checked,
+                })
+              }
+            />
+            <span class="text-secondary text-sm">Strip Spindle RPM (M3/M4 Safety)</span>
+          </label>
+        </Tooltip>
 
         <button
           class="btn-primary glow-accent"
@@ -258,3 +300,4 @@ export const ParameterControls: Component<ParameterControlsProps> = (props) => {
     </div>
   );
 };
+
