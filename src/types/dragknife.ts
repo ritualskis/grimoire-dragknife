@@ -1,5 +1,30 @@
 export type Unit = "mm" | "in";
 
+export type SheetDatumPosition =
+  | "bottom-left"
+  | "top-left"
+  | "center"
+  | "bottom-right"
+  | "top-right";
+
+export type ZZeroPosition = "surface" | "bed";
+
+export interface SheetConfig {
+  width: number;
+  height: number;
+  thickness: number;
+  originX: number;
+  originY: number;
+  datumPosition: SheetDatumPosition;
+  zZero: ZZeroPosition;
+  clearanceGap: number;
+  plungeGap: number;
+  homeX: number;
+  homeY: number;
+  homeZ: number;
+  visible?: boolean;
+}
+
 export type MotionMode = "Rapid" | "Linear" | "ArcCw" | "ArcCcw" | "Other";
 
 export interface Point2D {

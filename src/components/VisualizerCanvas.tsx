@@ -6,7 +6,7 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import type { Contour, SwivelArcInfo, Unit } from "../types/dragknife";
+import type { Contour, SheetConfig, SwivelArcInfo, Unit } from "../types/dragknife";
 import {
   GrimoirePlotter2D,
   DragKnifePlotterAdapter,
@@ -19,6 +19,7 @@ interface VisualizerCanvasProps {
   swivelArcs: SwivelArcInfo[];
   bladeOffset: number;
   unit: Unit;
+  sheetConfig?: SheetConfig;
 }
 
 export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
@@ -99,6 +100,10 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       "swivels",
     );
 
+    if (props.sheetConfig) {
+      plotter.setSheetConfig(props.sheetConfig, false);
+    }
+
     plotter.loadGeometry(targetGeometry, false);
     plotter.loadToolpath([...spindleSegments, ...swivelSegments], autoFit);
   };
@@ -117,6 +122,10 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
         swivelLiftHeight: 0.5,
       },
     });
+
+    if (props.sheetConfig) {
+      plotter.setSheetConfig(props.sheetConfig, false);
+    }
 
     plotter.resize(initW, initH);
 
@@ -154,6 +163,9 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       plotter.layerManager.setLayerVisibility("swivels", showSwivels());
       plotter.layerManager.setLayerVisibility("rapids", showRapids());
       plotter.isGridVisible = showGrid();
+      if (props.sheetConfig) {
+        plotter.setSheetConfig(props.sheetConfig, false);
+      }
       plotter.render();
     }
   });
@@ -193,30 +205,54 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   const zoomOut = () => plotter?.zoomAt(plotter.width / 2, plotter.height / 2, 0.8);
 
   return (
-    <div class="surface-card visualizer-container" ref={containerRef}>
-      {/* Top Toolbar */}
-      <div class="visualizer-toolbar flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="visualizer-title font-bold tracking-wider">
-            TOOLPATH PREVIEW
-          </span>
+    <div class="spark-visualizer-container flex flex-col flex-1 relative" ref={containerRef}>
+      {/* Interactive Canvas Viewport */}
+      <div class="canvas-wrapper flex-1 relative" ref={wrapperRef}>
+        <canvas ref={canvasRef} class="interactive-canvas" />
+
+        {/* Top-Right Spark View Mode & Zoom Controls */}
+        <div class="spark-canvas-top-controls flex items-center gap-1.5 absolute top-3 right-3 z-10">
+          <button type="button" class="spark-viewmode-btn active" title="2D Orthogonal View">
+            2D
+          </button>
+          <button type="button" class="spark-zoom-icon-btn" onClick={zoomIn} title="Zoom In (+)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </button>
+          <button type="button" class="spark-zoom-icon-btn" onClick={zoomOut} title="Zoom Out (-)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </button>
+          <button type="button" class="spark-zoom-icon-btn" onClick={zoomToFit} title="Zoom to Fit Sheet & Vectors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h6v6M9 21H3v-6M21 9v6M3 9v6" />
+              <rect x="7" y="7" width="10" height="10" rx="1" />
+            </svg>
+          </button>
         </div>
 
-        {/* Segmented Layer Badges */}
-        <div class="layer-toggles flex items-center gap-2">
+        {/* Top-Left Layer Badges */}
+        <div class="spark-layer-pills flex items-center gap-1.5 absolute top-3 left-3 z-10">
           <button
             type="button"
-            class={`layer-chip ${showTarget() ? "active" : ""}`}
+            class={`spark-layer-pill ${showTarget() ? "active" : ""}`}
             onClick={() => setShowTarget(!showTarget())}
-            title="Toggle Target Cut Geometry"
+            title="Toggle Target Cut Shape"
           >
             <span class="legend-dot legend-target" />
-            <span>Target Cut</span>
+            <span>Target Contour</span>
           </button>
 
           <button
             type="button"
-            class={`layer-chip ${showSpindle() ? "active" : ""}`}
+            class={`spark-layer-pill ${showSpindle() ? "active" : ""}`}
             onClick={() => setShowSpindle(!showSpindle())}
             title="Toggle Spindle Center Offset Toolpath"
           >
@@ -226,19 +262,19 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
 
           <button
             type="button"
-            class={`layer-chip ${showSwivels() ? "active" : ""}`}
+            class={`spark-layer-pill ${showSwivels() ? "active" : ""}`}
             onClick={() => setShowSwivels(!showSwivels())}
-            title="Toggle Corner Swivel Arc Moves"
+            title="Toggle Swivel Arcs"
           >
             <span class="legend-dot legend-swivel" />
-            <span>Swivels ({props.swivelArcs.length})</span>
+            <span>Swivels</span>
           </button>
 
           <button
             type="button"
-            class={`layer-chip ${showRapids() ? "active" : ""}`}
+            class={`spark-layer-pill ${showRapids() ? "active" : ""}`}
             onClick={() => setShowRapids(!showRapids())}
-            title="Toggle Rapid Travel Moves"
+            title="Toggle Rapid Moves"
           >
             <span class="legend-dot legend-rapid" />
             <span>Rapids</span>
@@ -246,42 +282,34 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
 
           <button
             type="button"
-            class={`layer-chip ${showGrid() ? "active" : ""}`}
+            class={`spark-layer-pill ${showGrid() ? "active" : ""}`}
             onClick={() => setShowGrid(!showGrid())}
-            title="Toggle CAD Engineering Grid"
+            title="Toggle Grid"
           >
             <span>Grid</span>
           </button>
         </div>
 
-        {/* Zoom & Viewport Actions */}
-        <div class="viewport-actions flex items-center gap-1">
-          <button class="tool-btn" onClick={zoomIn} title="Zoom In (+)" type="button">
-            +
-          </button>
-          <button class="tool-btn" onClick={zoomOut} title="Zoom Out (-)" type="button">
-            -
-          </button>
-          <button class="tool-btn fit-btn" onClick={zoomToFit} title="Fit Entire Toolpath to Viewport" type="button">
-            Fit
-          </button>
-        </div>
-      </div>
-
-      {/* Interactive Canvas Viewport */}
-      <div class="canvas-wrapper" ref={wrapperRef}>
-        <canvas ref={canvasRef} class="interactive-canvas" />
-
         {/* Precision Coordinate HUD */}
         <Show when={mouseCoord()}>
           {(coord) => (
-            <div class="coord-readout font-mono">
+            <div class="coord-readout font-mono absolute bottom-12 left-4 z-10">
               <span class="coord-item">X: <strong class="text-primary">{coord().x.toFixed(3)}</strong> {props.unit}</span>
               <span class="coord-divider">|</span>
               <span class="coord-item">Y: <strong class="text-primary">{coord().y.toFixed(3)}</strong> {props.unit}</span>
             </div>
           )}
         </Show>
+
+        {/* Floating Bottom Hint Ribbon (Exact Vectric Spark Format) */}
+        <div class="spark-bottom-hint-ribbon absolute bottom-2 inset-x-8 z-10">
+          <div class="hint-pill flex items-center justify-between">
+            <span class="hint-text truncate">
+              Click on an object to select, click again to transform | Hold <strong>SHIFT</strong> to select/deselect multiple objects | Drag left to right to select everything the box contains | Drag right to left to select everything the box touches
+            </span>
+            <span class="hint-question-btn" title="Help & Selection Rules">?</span>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Animation & Scrubber Transport Bar */}
