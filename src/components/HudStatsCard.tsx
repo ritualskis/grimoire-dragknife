@@ -13,8 +13,7 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
     <div class="surface-card hud-container">
       {/* HUD Header Bar */}
       <div class="hud-header flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="hud-badge-tag font-mono text-xs font-bold text-accent">HUD</span>
+        <div class="flex items-center gap-3">
           <h2 class="hud-title">HEADS-UP DISPLAY</h2>
           <Show when={props.filename}>
             <span class="hud-filename truncate">{props.filename}</span>
@@ -96,7 +95,7 @@ export const HudStatsCard: Component<HudStatsCardProps> = (props) => {
               <div class="hud-z-header flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="text-xs font-bold tracking-wider text-secondary">
-                    Z-AXIS HEIGHTS & STEPDOWN TELEMETRY
+                    Z HEIGHTS & STEPDOWNS
                   </span>
                 </div>
                 <div class="flex items-center gap-3 text-xs text-secondary">

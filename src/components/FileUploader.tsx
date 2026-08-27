@@ -73,9 +73,9 @@ export const FileUploader: Component<FileUploaderProps> = (props) => {
       </div>
 
       {/* Quick Sample Selector */}
-      <div class="samples-bar flex items-center gap-2">
-        <span class="text-xs text-secondary">OR LOAD SAMPLE:</span>
-        <div class="sample-chips-grid flex gap-2">
+      <div class="samples-bar flex flex-col gap-1">
+        <span class="text-xs text-secondary font-semibold">Load Sample Toolpath:</span>
+        <div class="sample-chips-grid">
           <For each={SAMPLE_GCODE_FILES}>
             {(sample) => (
               <button

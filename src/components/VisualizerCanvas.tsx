@@ -200,7 +200,7 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       <div class="visualizer-toolbar flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="visualizer-title font-bold tracking-wider">
-            2D CAD TOOLPATH & CORNER SWIVEL INSPECTOR
+            TOOLPATH PREVIEW
           </span>
         </div>
 

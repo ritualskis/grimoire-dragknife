@@ -119,16 +119,9 @@ export const DragKnifeStudio: Component = () => {
     <div class="dragknife-studio-layout">
       {/* Top Header */}
       <header class="app-header flex items-center justify-between surface-card">
-        <div class="flex items-center gap-3">
-          <div class="app-logo-badge font-mono font-bold text-accent">DK</div>
-          <div>
-            <h1 class="app-title">GRIMOIRE DRAGKNIFE</h1>
-            <span class="app-subtitle">Ritual Skis &bull; Barebones Vectric Drag Knife Post-Processor</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <span class="badge-status">STANDALONE ENGINE READY</span>
+        <div>
+          <h1 class="app-title">GRIMOIRE DRAGKNIFE</h1>
+          <span class="app-subtitle">Ritual Skis &bull; Vectric Drag Knife Post-Processor</span>
         </div>
       </header>
 

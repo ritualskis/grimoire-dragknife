@@ -20,13 +20,9 @@
   z-index: 10;
 }
 
-.app-logo {
-  font-size: 1.5rem;
-}
-
 .app-title {
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--color-text-primary);
@@ -39,35 +35,21 @@
   display: block;
 }
 
-.badge-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-3);
-  font-size: var(--text-xs);
-  font-family: var(--font-mono);
-  font-weight: 600;
-  background: var(--color-success-subtle);
-  color: var(--color-success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: var(--radius-pill);
-}
-
 /* Studio Workspace Layout */
 .studio-workspace {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4) var(--spacing-6);
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-5);
   overflow-y: auto;
 }
 
 /* Top Section: Uploader & HUD */
 .studio-top-section {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: var(--spacing-4);
+  grid-template-columns: 280px 1fr;
+  gap: var(--spacing-3);
 }
 
 .uploader-container {
@@ -80,7 +62,7 @@
 .dropzone {
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-md);
-  padding: var(--spacing-4);
+  padding: var(--spacing-3);
   text-align: center;
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-standard),
@@ -92,39 +74,42 @@
   background: var(--color-bg-elevated);
 }
 
-.dropzone-icon {
-  font-size: 1.6rem;
-  margin-bottom: var(--spacing-1);
-}
-
 .dropzone-primary {
   display: block;
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .dropzone-sub {
   display: block;
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--color-text-secondary);
 }
 
 .samples-bar {
-  overflow-x: auto;
   padding-top: var(--spacing-1);
+}
+
+.sample-chips-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
 }
 
 .chip-btn {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   font-family: var(--font-mono);
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
   transition: all var(--duration-fast) var(--ease-standard);
 }
 
@@ -155,27 +140,28 @@
 }
 
 .hud-filename {
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-family: var(--font-mono);
-  color: var(--color-accent-primary);
-  background: var(--color-accent-primary-subtle);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   padding: 2px 8px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   max-width: 250px;
 }
 
 .hud-badge {
   font-size: 11px;
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-weight: 500;
   padding: 2px 8px;
   border-radius: var(--radius-sm);
 }
 
 .hud-unit-badge {
-  background: var(--color-info-subtle);
-  color: var(--color-info);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .hud-lines-badge {
@@ -185,9 +171,9 @@
 }
 
 .hud-cycles-badge {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning);
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .hud-grid {
