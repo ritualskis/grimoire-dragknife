@@ -39,12 +39,18 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   const [showRapids, setShowRapids] = createSignal(true);
   const [showGrid, setShowGrid] = createSignal(true);
 
+  let resizeRaf: number | null = null;
   const handleResize = () => {
     if (!containerRef || !plotter) return;
-    const rect = containerRef.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      plotter.resize(rect.width, rect.height);
-    }
+    if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = null;
+      if (!containerRef || !plotter) return;
+      const rect = containerRef.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        plotter.resize(rect.width, rect.height);
+      }
+    });
   };
 
   const updatePlotterData = (autoFit = false) => {
@@ -134,6 +140,7 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   });
 
   onCleanup(() => {
+    if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
     if (resizeObserver) resizeObserver.disconnect();
     window.removeEventListener("resize", handleResize);
     if (plotter) plotter.pausePlayback();
