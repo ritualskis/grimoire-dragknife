@@ -15,6 +15,7 @@ export default defineConfig(() => ({
       "@styles": resolve(__dirname, "src/styles"),
       "@types": resolve(__dirname, "src/types"),
       "@assets": resolve(__dirname, "src/assets"),
+      "@grimoire/plotter-2d": resolve(__dirname, "../grimoire-2d/src/index.ts"),
     },
   },
 

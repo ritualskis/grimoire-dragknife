@@ -7,7 +7,11 @@ import {
   Show,
 } from "solid-js";
 import type { Contour, SwivelArcInfo, Unit } from "../types/dragknife";
-import { CadRenderer2D } from "../lib/cad-renderer";
+import {
+  GrimoirePlotter2D,
+  DragKnifePlotterAdapter,
+  type LiveMotionTelemetry,
+} from "@grimoire/plotter-2d";
 
 interface VisualizerCanvasProps {
   originalContours: Contour[];
@@ -20,8 +24,7 @@ interface VisualizerCanvasProps {
 export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined;
   let containerRef: HTMLDivElement | undefined;
-  let renderer: CadRenderer2D | null = null;
-  let animFrameId: number | null = null;
+  let plotter: GrimoirePlotter2D | null = null;
 
   const [isPlaying, setIsPlaying] = createSignal(false);
   const [simProgress, setSimProgress] = createSignal(0.0);
@@ -32,167 +35,127 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
   const [showSpindle, setShowSpindle] = createSignal(true);
   const [showSwivels, setShowSwivels] = createSignal(true);
   const [showRapids, setShowRapids] = createSignal(true);
-  const [showVectors, setShowVectors] = createSignal(true);
   const [showGrid, setShowGrid] = createSignal(true);
 
-  const [isDragging, setIsDragging] = createSignal(false);
-  const [dragStart, setDragStart] = createSignal({ x: 0, y: 0 });
-
   const handleResize = () => {
-    if (!containerRef || !renderer) return;
-    renderer.resize(containerRef.clientWidth, containerRef.clientHeight);
+    if (!containerRef || !plotter) return;
+    plotter.resize(containerRef.clientWidth, containerRef.clientHeight);
   };
 
-  const handleMouseDown = (e: MouseEvent) => {
-    if (e.button === 0 || e.button === 1) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - (renderer?.offsetX || 0),
-        y: e.clientY - (renderer?.offsetY || 0),
-      });
-    }
-  };
+  const updatePlotterData = (autoFit = true) => {
+    if (!plotter) return;
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!renderer || !canvasRef) return;
-    const rect = canvasRef.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
+    plotter.setUnit(props.unit);
+    plotter.setToolhead({
+      type: "dragknife",
+      bladeOffset: props.bladeOffset,
+      toleranceAngleDeg: 20,
+      swivelLiftHeight: 0.5,
+    });
 
-    if (isDragging()) {
-      renderer.offsetX = e.clientX - dragStart().x;
-      renderer.offsetY = e.clientY - dragStart().y;
-      renderer.render();
-      return;
-    }
+    const targetGeometry = DragKnifePlotterAdapter.contoursToGeometry(
+      props.originalContours.map((c) => ({
+        id: String(c.id),
+        vertices: c.vertices,
+        is_closed: c.is_closed,
+        cut_depth: 0,
+      })),
+      "target_contours",
+    );
 
-    const changed = renderer.updateHover(sx, sy);
-    setMouseCoord(renderer.mouseWorldPos);
-    if (changed) {
-      renderer.render();
-    }
-  };
+    const spindleSegments = DragKnifePlotterAdapter.contoursToToolpaths(
+      props.processedContours.map((c) => ({
+        id: String(c.id),
+        vertices: c.vertices,
+        is_closed: c.is_closed,
+        cut_depth: 0,
+      })),
+      1500,
+      "spindle_path",
+    );
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+    const swivelSegments = DragKnifePlotterAdapter.swivelsToToolpaths(
+      props.swivelArcs.map((sw) => ({
+        center: sw.center,
+        start: sw.start,
+        end: sw.end,
+        radius: sw.radius,
+        angle_deg: sw.angle_deg,
+        direction: sw.direction === "CW" ? "CW" : "CCW",
+      })),
+      "swivels",
+    );
 
-  const handleWheel = (e: WheelEvent) => {
-    e.preventDefault();
-    if (!renderer || !canvasRef) return;
-    const rect = canvasRef.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-
-    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    renderer.zoomAt(sx, sy, zoomFactor);
-  };
-
-  const zoomToFit = () => {
-    renderer?.fitToScreen();
-  };
-
-  const zoomIn = () => {
-    if (!renderer) return;
-    renderer.zoomAt(renderer.width / 2, renderer.height / 2, 1.25);
-  };
-
-  const zoomOut = () => {
-    if (!renderer) return;
-    renderer.zoomAt(renderer.width / 2, renderer.height / 2, 0.8);
-  };
-
-  const togglePlay = () => {
-    const next = !isPlaying();
-    setIsPlaying(next);
-    if (next) {
-      startAnimationLoop();
-    } else if (animFrameId) {
-      cancelAnimationFrame(animFrameId);
-      animFrameId = null;
-    }
-  };
-
-  const startAnimationLoop = () => {
-    let lastTime = performance.now();
-
-    const loop = (currentTime: number) => {
-      if (!isPlaying()) return;
-      const dt = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
-
-      const durationSec = 8.0; // 8 seconds per full cut loop
-      let nextProgress = simProgress() + dt / durationSec;
-      if (nextProgress > 1.0) nextProgress = 0.0;
-
-      setSimProgress(nextProgress);
-      if (renderer) {
-        renderer.simProgress = nextProgress;
-        renderer.render();
-      }
-
-      animFrameId = requestAnimationFrame(loop);
-    };
-
-    animFrameId = requestAnimationFrame(loop);
-  };
-
-  const handleScrubberInput = (val: number) => {
-    setSimProgress(val);
-    if (renderer) {
-      renderer.simProgress = val;
-      renderer.render();
-    }
+    plotter.loadGeometry(targetGeometry, false);
+    plotter.loadToolpath([...spindleSegments, ...swivelSegments], autoFit);
   };
 
   onMount(() => {
     if (!canvasRef || !containerRef) return;
-    renderer = new CadRenderer2D(canvasRef);
-    renderer.setData(
-      props.originalContours,
-      props.processedContours,
-      props.swivelArcs,
-      props.bladeOffset,
-      props.unit,
-    );
+    plotter = new GrimoirePlotter2D(canvasRef, {
+      unit: props.unit,
+      toolhead: {
+        type: "dragknife",
+        bladeOffset: props.bladeOffset,
+        toleranceAngleDeg: 20,
+        swivelLiftHeight: 0.5,
+      },
+    });
+
+    plotter.on("telemetry", (t: LiveMotionTelemetry) => {
+      setSimProgress(t.progress);
+    });
+
+    plotter.on("hover", (data: any) => {
+      if (data && data.worldPos) {
+        setMouseCoord(data.worldPos);
+      }
+    });
+
+    updatePlotterData(true);
     handleResize();
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("mouseup", handleMouseUp);
   });
 
   onCleanup(() => {
     window.removeEventListener("resize", handleResize);
-    window.removeEventListener("mouseup", handleMouseUp);
-    if (animFrameId) cancelAnimationFrame(animFrameId);
+    if (plotter) plotter.pausePlayback();
   });
 
   createEffect(() => {
-    if (renderer) {
-      renderer.layers = {
-        target: showTarget(),
-        spindle: showSpindle(),
-        swivels: showSwivels(),
-        rapids: showRapids(),
-        vectors: showVectors(),
-        grid: showGrid(),
-      };
-      renderer.render();
+    if (plotter) {
+      plotter.layerManager.setLayerVisibility("target_contours", showTarget());
+      plotter.layerManager.setLayerVisibility("spindle_path", showSpindle());
+      plotter.layerManager.setLayerVisibility("swivels", showSwivels());
+      plotter.layerManager.setLayerVisibility("rapids", showRapids());
+      plotter.isGridVisible = showGrid();
+      plotter.render();
     }
   });
 
   createEffect(() => {
-    if (renderer) {
-      renderer.setData(
-        props.originalContours,
-        props.processedContours,
-        props.swivelArcs,
-        props.bladeOffset,
-        props.unit,
-        true,
-      );
+    if (plotter) {
+      updatePlotterData(false);
     }
   });
+
+  const togglePlay = () => {
+    if (!plotter) return;
+    const next = !isPlaying();
+    setIsPlaying(next);
+    if (next) plotter.startPlayback();
+    else plotter.pausePlayback();
+  };
+
+  const handleScrubberInput = (val: number) => {
+    setSimProgress(val);
+    if (plotter) plotter.scrubTo(val);
+  };
+
+  const zoomToFit = () => plotter?.fitView();
+  const zoomIn = () => plotter?.zoomAt(plotter.width / 2, plotter.height / 2, 1.25);
+  const zoomOut = () => plotter?.zoomAt(plotter.width / 2, plotter.height / 2, 0.8);
 
   return (
     <div class="surface-card visualizer-container" ref={containerRef}>
@@ -239,15 +202,6 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
           <label class="layer-item flex items-center gap-1">
             <input
               type="checkbox"
-              checked={showVectors()}
-              onChange={(e) => setShowVectors(e.currentTarget.checked)}
-            />
-            <span class="text-xs text-secondary">Vectors</span>
-          </label>
-
-          <label class="layer-item flex items-center gap-1">
-            <input
-              type="checkbox"
               checked={showRapids()}
               onChange={(e) => setShowRapids(e.currentTarget.checked)}
             />
@@ -280,13 +234,7 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
 
       {/* Interactive Canvas */}
       <div class="canvas-wrapper">
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onWheel={handleWheel}
-          class="interactive-canvas"
-        />
+        <canvas ref={canvasRef} class="interactive-canvas" />
 
         {/* Floating Readout */}
         <Show when={mouseCoord()}>

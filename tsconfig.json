@@ -28,7 +28,9 @@
       "@lib/*": ["src/lib/*"],
       "@styles/*": ["src/styles/*"],
       "@types/*": ["src/types/*"],
-      "@assets/*": ["src/assets/*"]
+      "@assets/*": ["src/assets/*"],
+      "@grimoire/plotter-2d": ["../grimoire-2d/src/index.ts"],
+      "@grimoire/plotter-2d/*": ["../grimoire-2d/src/*"]
     }
   },
   "include": ["src", "vite.config.ts"]
