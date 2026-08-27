@@ -1,13 +1,17 @@
 # Node
-node_modules/
-dist/
-dist-ssr/
+/node_modules/
+/dist/
+/dist-ssr/
 *.local
 
 # Rust & Tauri
-target/
+/target/
 src-tauri/target/
 src-tauri/gen/
+
+# Python
+__pycache__/
+*.py[cod]
 
 # Logs & Temp
 npm-debug.log*
