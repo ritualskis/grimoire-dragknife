@@ -1,69 +1,29 @@
-import { Component, createEffect, createSignal } from "solid-js";
-import type { SheetConfig, SheetDatumPosition, Unit, ZZeroPosition } from "../types/dragknife";
+import { Component, Show } from "solid-js";
+import type { HUDStats, SheetConfig, Unit } from "../types/dragknife";
+import { formatDistance, formatTime } from "../lib/formatters";
 
 interface SheetSettingsPanelProps {
   sheetConfig: SheetConfig;
+  hudStats: HUDStats | null;
+  filename?: string;
   unit: Unit;
-  onUpdateSheet: (config: SheetConfig) => void;
   onClose?: () => void;
 }
 
 export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) => {
-  const [width, setWidth] = createSignal(props.sheetConfig.width);
-  const [height, setHeight] = createSignal(props.sheetConfig.height);
-  const [thickness, setThickness] = createSignal(props.sheetConfig.thickness);
-  const [posX, setPosX] = createSignal(props.sheetConfig.originX);
-  const [posY, setPosY] = createSignal(props.sheetConfig.originY);
-  const [datum, setDatum] = createSignal<SheetDatumPosition>(props.sheetConfig.datumPosition);
-  const [zZero, setZZero] = createSignal<ZZeroPosition>(props.sheetConfig.zZero);
-  const [clearance, setClearance] = createSignal(props.sheetConfig.clearanceGap);
-  const [plunge, setPlunge] = createSignal(props.sheetConfig.plungeGap);
-  const [homeX, setHomeX] = createSignal(props.sheetConfig.homeX);
-  const [homeY, setHomeY] = createSignal(props.sheetConfig.homeY);
-  const [homeZ, setHomeZ] = createSignal(props.sheetConfig.homeZ);
-
-  // Synchronize when analysis loads or parent props update
-  createEffect(() => {
-    setWidth(props.sheetConfig.width);
-    setHeight(props.sheetConfig.height);
-    setThickness(props.sheetConfig.thickness);
-    setPosX(props.sheetConfig.originX);
-    setPosY(props.sheetConfig.originY);
-    setDatum(props.sheetConfig.datumPosition);
-    setZZero(props.sheetConfig.zZero);
-    setClearance(props.sheetConfig.clearanceGap);
-    setPlunge(props.sheetConfig.plungeGap);
-    setHomeX(props.sheetConfig.homeX);
-    setHomeY(props.sheetConfig.homeY);
-    setHomeZ(props.sheetConfig.homeZ);
-  });
-
-  const handleConfirm = () => {
-    const updated: SheetConfig = {
-      width: width(),
-      height: height(),
-      thickness: thickness(),
-      originX: posX(),
-      originY: posY(),
-      datumPosition: datum(),
-      zZero: zZero(),
-      clearanceGap: clearance(),
-      plungeGap: plunge(),
-      homeX: homeX(),
-      homeY: homeY(),
-      homeZ: homeZ(),
-      visible: true,
-    };
-    props.onUpdateSheet(updated);
-  };
-
   const u = () => props.unit;
+  const s = () => props.sheetConfig;
+  const h = () => props.hudStats;
 
   return (
     <aside class="spark-sheet-settings-panel">
       {/* Panel Header */}
       <div class="sheet-header flex items-center justify-between">
-        <h2 class="sheet-title font-bold text-white text-base">Sheet Settings</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="sheet-title font-bold text-white text-sm tracking-wide">
+            TOOLPATH & SHEET ANALYSIS
+          </h2>
+        </div>
         <button
           type="button"
           class="sheet-collapse-btn"
@@ -76,308 +36,204 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
         </button>
       </div>
 
-      <div class="sheet-scroll-body flex flex-col gap-4">
-        {/* Section 1: Size */}
+      <div class="sheet-scroll-body flex flex-col gap-3">
+        {/* File / Program Badge */}
+        <div class="sheet-section surface-card p-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300 truncate max-w-[200px]">
+              {props.filename || "No File Loaded"}
+            </span>
+            <Show when={h()}>
+              {(stats) => (
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-purple-300 border border-slate-700">
+                  {stats().unit}
+                </span>
+              )}
+            </Show>
+          </div>
+          <Show when={h()}>
+            {(stats) => (
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+                <span>{stats().total_lines} Lines</span>
+                <span>{stats().depth_pass_count} {stats().depth_pass_count === 1 ? "Pass" : "Passes"}</span>
+                <span>{stats().cycle_count} {stats().cycle_count === 1 ? "Cycle" : "Cycles"}</span>
+              </div>
+            )}
+          </Show>
+        </div>
+
+        {/* Section 1: Material Size (Parsed Bounds) */}
         <div class="sheet-section">
-          <span class="sheet-section-heading">Size</span>
+          <span class="sheet-section-heading">Material Stock (Envelope)</span>
           <div class="sheet-row-2">
             <div class="sheet-field">
-              <label class="sheet-label">Width (X)</label>
-              <div class="sheet-input-box">
-                <input
-                  type="number"
-                  step={u() === "in" ? "0.1" : "1"}
-                  value={width()}
-                  onInput={(e) => setWidth(parseFloat(e.currentTarget.value) || 0)}
-                  class="sheet-input"
-                />
-                <span class="sheet-unit-tag">{u()}</span>
+              <span class="sheet-label">Width (X)</span>
+              <div class="sheet-stat-display font-mono">
+                <span class="sheet-stat-val">{s().width.toFixed(2)}</span>
+                <span class="sheet-stat-unit">{u()}</span>
               </div>
             </div>
 
             <div class="sheet-field">
-              <label class="sheet-label">Length (Y)</label>
-              <div class="sheet-input-box">
-                <input
-                  type="number"
-                  step={u() === "in" ? "0.1" : "1"}
-                  value={height()}
-                  onInput={(e) => setHeight(parseFloat(e.currentTarget.value) || 0)}
-                  class="sheet-input"
-                />
-                <span class="sheet-unit-tag">{u()}</span>
+              <span class="sheet-label">Length (Y)</span>
+              <div class="sheet-stat-display font-mono">
+                <span class="sheet-stat-val">{s().height.toFixed(2)}</span>
+                <span class="sheet-stat-unit">{u()}</span>
               </div>
             </div>
           </div>
 
           <div class="sheet-field mt-2">
-            <label class="sheet-label">Thickness (Z)</label>
-            <div class="sheet-input-box">
-              <input
-                type="number"
-                step={u() === "in" ? "0.001" : "0.05"}
-                value={thickness()}
-                onInput={(e) => setThickness(parseFloat(e.currentTarget.value) || 0)}
-                class="sheet-input"
-              />
-              <span class="sheet-unit-tag">{u()}</span>
+            <span class="sheet-label">Cut Thickness (Z)</span>
+            <div class="sheet-stat-display font-mono">
+              <span class="sheet-stat-val text-amber-400">{s().thickness.toFixed(3)}</span>
+              <span class="sheet-stat-unit">{u()}</span>
             </div>
           </div>
         </div>
 
-        {/* Section 2: Position & Datum Quadrant Matrix */}
+        {/* Section 2: Position & Datum Origin */}
         <div class="sheet-section">
-          <span class="sheet-section-heading">Position</span>
+          <span class="sheet-section-heading">Datum & Origin</span>
           <div class="sheet-position-grid">
             <div class="sheet-xy-inputs flex flex-col gap-2">
               <div class="sheet-field">
-                <label class="sheet-label">X</label>
-                <div class="sheet-input-box">
-                  <input
-                    type="number"
-                    step={u() === "in" ? "0.1" : "1"}
-                    value={posX()}
-                    onInput={(e) => setPosX(parseFloat(e.currentTarget.value) || 0)}
-                    class="sheet-input"
-                  />
-                  <span class="sheet-unit-tag">{u()}</span>
+                <span class="sheet-label">Origin X</span>
+                <div class="sheet-stat-display font-mono">
+                  <span class="sheet-stat-val">{s().originX.toFixed(3)}</span>
+                  <span class="sheet-stat-unit">{u()}</span>
                 </div>
               </div>
 
               <div class="sheet-field">
-                <label class="sheet-label">Y</label>
-                <div class="sheet-input-box">
-                  <input
-                    type="number"
-                    step={u() === "in" ? "0.1" : "1"}
-                    value={posY()}
-                    onInput={(e) => setPosY(parseFloat(e.currentTarget.value) || 0)}
-                    class="sheet-input"
-                  />
-                  <span class="sheet-unit-tag">{u()}</span>
+                <span class="sheet-label">Origin Y</span>
+                <div class="sheet-stat-display font-mono">
+                  <span class="sheet-stat-val">{s().originY.toFixed(3)}</span>
+                  <span class="sheet-stat-unit">{u()}</span>
                 </div>
               </div>
             </div>
 
-            {/* 5-Point Datum Origin Selector Matrix */}
+            {/* 5-Point Datum Origin Quadrant Indicator */}
             <div class="datum-matrix-box">
               <div class="datum-matrix">
-                {/* Top-Left */}
-                <button
-                  type="button"
-                  class={`datum-dot ${datum() === "top-left" ? "active" : ""}`}
-                  onClick={() => setDatum("top-left")}
-                  title="Origin: Top-Left"
-                />
+                <div class="datum-dot" title="Top-Left" />
                 <span class="datum-guide-h" />
-                {/* Top-Right */}
-                <button
-                  type="button"
-                  class={`datum-dot ${datum() === "top-right" ? "active" : ""}`}
-                  onClick={() => setDatum("top-right")}
-                  title="Origin: Top-Right"
-                />
-
+                <div class="datum-dot" title="Top-Right" />
                 <span class="datum-guide-v" />
-                {/* Center */}
-                <button
-                  type="button"
-                  class={`datum-dot ${datum() === "center" ? "active" : ""}`}
-                  onClick={() => setDatum("center")}
-                  title="Origin: Center"
-                />
+                <div class="datum-dot" title="Center" />
                 <span class="datum-guide-v" />
-
-                {/* Bottom-Left (Default) */}
-                <button
-                  type="button"
-                  class={`datum-dot ${datum() === "bottom-left" ? "active" : ""}`}
-                  onClick={() => setDatum("bottom-left")}
-                  title="Origin: Bottom-Left (Default)"
-                />
+                <div class="datum-dot active" title="Bottom-Left (Program Zero)" />
                 <span class="datum-guide-h" />
-                {/* Bottom-Right */}
-                <button
-                  type="button"
-                  class={`datum-dot ${datum() === "bottom-right" ? "active" : ""}`}
-                  onClick={() => setDatum("bottom-right")}
-                  title="Origin: Bottom-Right"
-                />
+                <div class="datum-dot" title="Bottom-Right" />
               </div>
+              <span class="text-[9px] text-slate-400 text-center font-mono mt-1">X0 Y0</span>
             </div>
           </div>
         </div>
 
-        {/* Section 3: Z-Zero Position */}
+        {/* Section 3: Z-Zero Reference */}
         <div class="sheet-section">
-          <span class="sheet-section-heading">Z-Zero Position</span>
+          <span class="sheet-section-heading">Z-Zero Reference</span>
           <div class="sheet-z-zero-grid flex items-center justify-between">
-            <div class="sheet-radio-group flex flex-col gap-2">
-              <label class="sheet-radio-label">
-                <input
-                  type="radio"
-                  name="z-zero"
-                  checked={zZero() === "surface"}
-                  onChange={() => setZZero("surface")}
-                  class="sheet-radio"
-                />
-                <span>Sheet Surface</span>
-              </label>
-
-              <label class="sheet-radio-label">
-                <input
-                  type="radio"
-                  name="z-zero"
-                  checked={zZero() === "bed"}
-                  onChange={() => setZZero("bed")}
-                  class="sheet-radio"
-                />
-                <span>Machine Bed</span>
-              </label>
+            <div class="sheet-readout-badge flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400" />
+              <span class="text-xs font-semibold text-slate-200">Material Top Surface (Z=0)</span>
             </div>
 
             {/* 3D Isometric Material Block Illustration */}
             <div class="z-zero-diagram">
-              <svg width="64" height="48" viewBox="0 0 64 48" fill="none">
-                {/* 3D Block */}
-                <polygon points="32,4 58,16 32,28 6,16" fill={zZero() === "surface" ? "#ef4444" : "#94a3b8"} opacity={zZero() === "surface" ? "1" : "0.7"} />
+              <svg width="56" height="40" viewBox="0 0 64 48" fill="none">
+                <polygon points="32,4 58,16 32,28 6,16" fill="#ef4444" opacity="1" />
                 <polygon points="6,16 32,28 32,44 6,32" fill="#b45309" opacity="0.85" />
                 <polygon points="58,16 32,28 32,44 58,32" fill="#78350f" opacity="0.95" />
-                {/* Top highlight outline */}
-                <polygon points="32,4 58,16 32,28 6,16" stroke={zZero() === "surface" ? "#fca5a5" : "#cbd5e1"} stroke-width="1.2" fill="none" />
-                {/* Bottom Bed outline if selected */}
-                {zZero() === "bed" && (
-                  <polygon points="6,32 32,44 58,32" stroke="#ef4444" stroke-width="2" fill="none" />
-                )}
+                <polygon points="32,4 58,16 32,28 6,16" stroke="#fca5a5" stroke-width="1.2" fill="none" />
               </svg>
             </div>
           </div>
         </div>
 
-        {/* Section 4: Gaps Above Sheet */}
+        {/* Section 4: Z Travel & Plunge Heights */}
         <div class="sheet-section">
-          <span class="sheet-section-heading">Gaps Above Sheet</span>
+          <span class="sheet-section-heading">G-Code Kinematics</span>
           <div class="sheet-gaps-grid flex items-center justify-between">
             <div class="sheet-gaps-inputs flex flex-col gap-2 flex-1">
               <div class="sheet-field">
-                <label class="sheet-label">Clearance (1)</label>
-                <div class="sheet-input-box">
-                  <input
-                    type="number"
-                    step={u() === "in" ? "0.1" : "1"}
-                    value={clearance()}
-                    onInput={(e) => setClearance(parseFloat(e.currentTarget.value) || 0)}
-                    class="sheet-input"
-                  />
-                  <span class="sheet-unit-tag">{u()}</span>
+                <span class="sheet-label">Rapid Clearance (Z)</span>
+                <div class="sheet-stat-display font-mono">
+                  <span class="sheet-stat-val text-emerald-400">{s().clearanceGap.toFixed(2)}</span>
+                  <span class="sheet-stat-unit">{u()}</span>
                 </div>
               </div>
 
               <div class="sheet-field">
-                <label class="sheet-label">Plunge (2)</label>
-                <div class="sheet-input-box">
-                  <input
-                    type="number"
-                    step={u() === "in" ? "0.1" : "1"}
-                    value={plunge()}
-                    onInput={(e) => setPlunge(parseFloat(e.currentTarget.value) || 0)}
-                    class="sheet-input"
-                  />
-                  <span class="sheet-unit-tag">{u()}</span>
+                <span class="sheet-label">Safe Plunge Height</span>
+                <div class="sheet-stat-display font-mono">
+                  <span class="sheet-stat-val text-amber-400">{s().plungeGap.toFixed(2)}</span>
+                  <span class="sheet-stat-unit">{u()}</span>
                 </div>
               </div>
             </div>
 
-            {/* Clearance Diagram with Knife/Toolhead */}
+            {/* Clearance Diagram with Knife */}
             <div class="gaps-diagram">
-              <svg width="74" height="60" viewBox="0 0 74 60" fill="none">
-                {/* Workpiece */}
+              <svg width="68" height="54" viewBox="0 0 74 60" fill="none">
                 <rect x="14" y="44" width="56" height="14" rx="2" fill="#d97706" opacity="0.8" />
                 <line x1="10" y1="44" x2="72" y2="44" stroke="#fef3c7" stroke-width="1" />
-                
-                {/* Cutter body */}
                 <rect x="50" y="6" width="6" height="14" fill="#cbd5e1" rx="1" />
                 <polygon points="50,20 56,20 53,26" fill="#ef4444" />
-                
-                {/* Clearance line 1 (Top green) */}
                 <line x1="14" y1="12" x2="50" y2="12" stroke="#22c55e" stroke-dasharray="2 2" />
-                <circle cx="20" cy="12" r="6" fill="#1e293b" stroke="#22c55e" />
-                <text x="20" y="15" font-size="8" font-family="sans-serif" font-weight="bold" fill="#22c55e" text-anchor="middle">1</text>
-                
-                {/* Plunge line 2 (Middle red/orange) */}
-                <line x1="14" y1="28" x2="50" y2="28" stroke="#f97316" stroke-dasharray="2 2" />
-                <circle cx="28" cy="28" r="6" fill="#1e293b" stroke="#f97316" />
-                <text x="28" y="31" font-size="8" font-family="sans-serif" font-weight="bold" fill="#f97316" text-anchor="middle">2</text>
+                <circle cx="20" cy="12" r="5" fill="#1e293b" stroke="#22c55e" />
+                <text x="20" y="15" font-size="7" font-family="sans-serif" font-weight="bold" fill="#22c55e" text-anchor="middle">Z</text>
               </svg>
             </div>
           </div>
         </div>
 
-        {/* Section 5: Home Position */}
-        <div class="sheet-section">
-          <span class="sheet-section-heading">Home Position</span>
-          <div class="sheet-row-2">
-            <div class="sheet-field">
-              <label class="sheet-label">X</label>
-              <div class="sheet-input-box">
-                <input
-                  type="number"
-                  step={u() === "in" ? "0.1" : "1"}
-                  value={homeX()}
-                  onInput={(e) => setHomeX(parseFloat(e.currentTarget.value) || 0)}
-                  class="sheet-input"
-                />
-                <span class="sheet-unit-tag">{u()}</span>
+        {/* Section 5: Cutting Metrics */}
+        <Show when={h()}>
+          {(stats) => (
+            <div class="sheet-section">
+              <span class="sheet-section-heading">Cutting Metrics</span>
+              <div class="sheet-metrics-grid flex flex-col gap-2">
+                <div class="sheet-metric-row flex items-center justify-between">
+                  <span class="text-xs text-slate-400">Cut Distance</span>
+                  <span class="font-mono text-xs font-semibold text-purple-400">
+                    {formatDistance(stats().total_cut_distance, props.unit)}
+                  </span>
+                </div>
+
+                <div class="sheet-metric-row flex items-center justify-between">
+                  <span class="text-xs text-slate-400">Rapid Travel</span>
+                  <span class="font-mono text-xs text-slate-300">
+                    {formatDistance(stats().total_rapid_distance, props.unit)}
+                  </span>
+                </div>
+
+                <div class="sheet-metric-row flex items-center justify-between">
+                  <span class="text-xs text-slate-400">Corner Swivels</span>
+                  <span class="font-mono text-xs font-semibold text-cyan-400">
+                    {stats().swivel_arc_count} Arcs
+                  </span>
+                </div>
+
+                <div class="sheet-metric-row flex items-center justify-between">
+                  <span class="text-xs text-slate-400">Programmed Feed</span>
+                  <span class="font-mono text-xs text-slate-200">
+                    {stats().cut_feedrate ? stats().cut_feedrate!.toFixed(0) : "Auto"} {props.unit}/min
+                  </span>
+                </div>
+
+                <div class="sheet-metric-row flex items-center justify-between pt-1 border-t border-slate-800">
+                  <span class="text-xs font-medium text-slate-300">Estimated Time</span>
+                  <span class="font-mono text-xs font-bold text-emerald-400">
+                    {formatTime(stats().estimated_cycle_time_seconds)}
+                  </span>
+                </div>
               </div>
             </div>
-
-            <div class="sheet-field">
-              <label class="sheet-label">Y</label>
-              <div class="sheet-input-box">
-                <input
-                  type="number"
-                  step={u() === "in" ? "0.1" : "1"}
-                  value={homeY()}
-                  onInput={(e) => setHomeY(parseFloat(e.currentTarget.value) || 0)}
-                  class="sheet-input"
-                />
-                <span class="sheet-unit-tag">{u()}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="sheet-field mt-2">
-            <label class="sheet-label">Z Height Above Sheet</label>
-            <div class="sheet-input-box">
-              <input
-                type="number"
-                step={u() === "in" ? "0.1" : "1"}
-                value={homeZ()}
-                onInput={(e) => setHomeZ(parseFloat(e.currentTarget.value) || 0)}
-                class="sheet-input"
-              />
-              <span class="sheet-unit-tag">{u()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div class="sheet-actions flex flex-col gap-2 mt-2">
-          <button
-            type="button"
-            class="sheet-confirm-btn"
-            onClick={handleConfirm}
-          >
-            Confirm Sheet Settings
-          </button>
-          <button
-            type="button"
-            class="sheet-close-btn"
-            onClick={props.onClose}
-          >
-            Close
-          </button>
-        </div>
+          )}
+        </Show>
       </div>
     </aside>
   );

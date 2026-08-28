@@ -251,6 +251,22 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
           </button>
         </div>
 
+        {/* Empty State Overlay */}
+        <Show when={props.originalContours.length === 0}>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+            <div class="p-6 rounded-xl bg-slate-900/85 border border-slate-800 backdrop-blur text-center max-w-sm">
+              <svg class="mx-auto mb-3 text-slate-500" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="12" y1="18" x2="12" y2="12" />
+                <line x1="9" y1="15" x2="15" y2="15" />
+              </svg>
+              <h3 class="text-sm font-semibold text-slate-200 mb-1">No G-Code Toolpath Loaded</h3>
+              <p class="text-xs text-slate-400">Click <strong>Open G-Code</strong> in the top bar to inspect your CNC toolpath and generate drag knife compensation.</p>
+            </div>
+          </div>
+        </Show>
+
         {/* Precision Coordinate HUD */}
         <Show when={mouseCoord()}>
           {(coord) => (

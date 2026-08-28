@@ -1,6 +1,5 @@
-import { Component, For, Show, createSignal } from "solid-js";
+import { Component, Show } from "solid-js";
 import type { Unit } from "../types/dragknife";
-import { SAMPLE_GCODE_FILES, type SampleFile } from "../assets/sample-data";
 
 interface VectricHeaderProps {
   projectName: string;
@@ -8,9 +7,6 @@ interface VectricHeaderProps {
   unit: Unit;
   onUnitToggle: (unit: Unit) => void;
   onOpenFile: () => void;
-  onSelectSample?: (sample: SampleFile) => void;
-  activeTab: "sheet" | "dragknife" | "hud" | "gcode";
-  onToggleTab: (tab: "sheet" | "dragknife" | "hud" | "gcode") => void;
   isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
   onExport?: () => void;
@@ -18,12 +14,10 @@ interface VectricHeaderProps {
 }
 
 export const VectricHeader: Component<VectricHeaderProps> = (props) => {
-  const [isSampleMenuOpen, setIsSampleMenuOpen] = createSignal(false);
-
   return (
     <header class="spark-main-header">
       <div class="spark-app-menubar flex items-center justify-between px-3 py-1">
-        {/* Left: Branding & Current File */}
+        {/* Left: Branding & Open File */}
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2">
             <div class="spark-logo-icon font-black text-black">
@@ -34,53 +28,10 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
 
           <div class="h-4 w-px bg-slate-700 mx-1" />
 
-          {/* Current File / Sample Selector Dropdown */}
-          <div class="relative">
-            <button
-              type="button"
-              class="spark-sheet-pill flex items-center gap-2"
-              onClick={() => setIsSampleMenuOpen(!isSampleMenuOpen())}
-              title="Select Sample or View Loaded File"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              <span class="font-medium text-xs text-white truncate max-w-[220px]">
-                {props.projectName || "No File Loaded"}
-              </span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-
-            <Show when={isSampleMenuOpen()}>
-              <div class="spark-dropdown-menu">
-                <div class="text-[10px] uppercase font-bold text-slate-400 px-2 py-1 tracking-wider border-b border-slate-700">
-                  Load Sample Toolpath
-                </div>
-                <For each={SAMPLE_GCODE_FILES}>
-                  {(sample) => (
-                    <div
-                      class="spark-dropdown-item"
-                      onClick={() => {
-                        props.onSelectSample?.(sample);
-                        setIsSampleMenuOpen(false);
-                      }}
-                    >
-                      <div class="font-semibold text-slate-200">{sample.name}</div>
-                      <div class="text-[10px] text-slate-400 font-mono">{sample.filename}</div>
-                    </div>
-                  )}
-                </For>
-              </div>
-            </Show>
-          </div>
-
           {/* Open Local G-Code Button */}
           <button
             type="button"
-            class="spark-icon-btn flex items-center gap-1.5 px-2.5 py-1 text-xs"
+            class="sheet-confirm-btn flex items-center gap-1.5 px-3 py-1 text-xs font-semibold"
             onClick={props.onOpenFile}
             title="Open G-Code / NC File from Disk"
           >
@@ -89,40 +40,19 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            <span>Open File</span>
+            <span>Open G-Code</span>
           </button>
-        </div>
 
-        {/* Center: Navigation Tabs for Right Panel */}
-        <div class="spark-nav-tabs flex items-center">
-          <button
-            type="button"
-            class={`spark-tab-btn ${props.activeTab === "sheet" && props.isSidebarOpen ? "active" : ""}`}
-            onClick={() => props.onToggleTab("sheet")}
-          >
-            Sheet Settings
-          </button>
-          <button
-            type="button"
-            class={`spark-tab-btn ${props.activeTab === "dragknife" && props.isSidebarOpen ? "active" : ""}`}
-            onClick={() => props.onToggleTab("dragknife")}
-          >
-            Knife Parameters
-          </button>
-          <button
-            type="button"
-            class={`spark-tab-btn ${props.activeTab === "hud" && props.isSidebarOpen ? "active" : ""}`}
-            onClick={() => props.onToggleTab("hud")}
-          >
-            Telemetry HUD
-          </button>
-          <button
-            type="button"
-            class={`spark-tab-btn ${props.activeTab === "gcode" && props.isSidebarOpen ? "active" : ""}`}
-            onClick={() => props.onToggleTab("gcode")}
-          >
-            G-Code Inspector
-          </button>
+          {/* Current Loaded File Badge */}
+          <div class="spark-sheet-pill flex items-center gap-2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span class="font-medium text-xs text-slate-200 truncate max-w-[260px]">
+              {props.projectName || "No File Loaded"}
+            </span>
+          </div>
         </div>
 
         {/* Right: Unit Toggle, Export & Sidebar Collapse */}
@@ -149,7 +79,7 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
           <Show when={props.hasFile}>
             <button
               type="button"
-              class="sheet-confirm-btn flex items-center gap-1.5 px-3 py-1 text-xs font-semibold"
+              class="spark-icon-btn flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10"
               onClick={props.onExport}
               title="Download Processed Drag Knife G-Code"
             >
@@ -167,7 +97,7 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
             type="button"
             class="spark-icon-btn flex items-center justify-center p-1.5 text-xs"
             onClick={props.onToggleSidebar}
-            title={props.isSidebarOpen ? "Collapse Inspector Panel" : "Open Inspector Panel"}
+            title={props.isSidebarOpen ? "Collapse Analysis Panel" : "Open Analysis Panel"}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" />

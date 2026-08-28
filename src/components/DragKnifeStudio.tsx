@@ -1,10 +1,7 @@
-import { Component, Show, createSignal, onMount } from "solid-js";
+import { Component, Show, createSignal } from "solid-js";
 import { VectricHeader } from "./VectricHeader";
 import { SheetSettingsPanel } from "./SheetSettingsPanel";
-import { HudStatsCard } from "./HudStatsCard";
-import { ParameterControls } from "./ParameterControls";
 import { VisualizerCanvas } from "./VisualizerCanvas";
-import { GCodeInspector } from "./GCodeInspector";
 import {
   type DragKnifeConfig,
   type DragKnifeResult,
@@ -13,32 +10,29 @@ import {
   type Unit,
 } from "../types/dragknife";
 import { analyzeGCode, processDragKnifeGCode } from "../lib/tauri";
-import { SAMPLE_GCODE_FILES, type SampleFile } from "../assets/sample-data";
 
 export const DragKnifeStudio: Component = () => {
   const [currentFileContent, setCurrentFileContent] = createSignal<string>("");
   const [currentFilename, setCurrentFilename] = createSignal<string>("");
-  const [projectName, setProjectName] = createSignal<string>("Blacklight Base v0*");
+  const [projectName, setProjectName] = createSignal<string>("");
   const [unit, setUnit] = createSignal<Unit>("in");
-  const [isProcessing, setIsProcessing] = createSignal<boolean>(false);
-  const [activeTab, setActiveTab] = createSignal<"sheet" | "dragknife" | "hud" | "gcode">("sheet");
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true);
 
   let fileInputRef: HTMLInputElement | undefined;
 
   const [sheetConfig, setSheetConfig] = createSignal<SheetConfig>({
-    width: 13,
-    height: 74,
-    thickness: 0.055,
+    width: 0,
+    height: 0,
+    thickness: 0,
     originX: 0,
     originY: 0,
     datumPosition: "bottom-left",
     zZero: "surface",
-    clearanceGap: 2,
-    plungeGap: 1,
+    clearanceGap: 0,
+    plungeGap: 0,
     homeX: 0,
     homeY: 0,
-    homeZ: 10,
+    homeZ: 0,
     visible: true,
   });
 
@@ -66,9 +60,14 @@ export const DragKnifeStudio: Component = () => {
       // Set active unit and sheet dimensions based on analysis
       if (stats.unit.includes("G20") || stats.unit.includes("Imperial")) {
         setUnit("in");
-        if (config().blade_offset > 0.5) {
-          setConfig((c) => ({ ...c, blade_offset: 0.0625, swivel_lift_height: 0.02, swivel_feed: 15.0 }));
-        }
+        const newCfg: DragKnifeConfig = {
+          ...config(),
+          blade_offset: 0.0625,
+          swivel_lift_height: 0.02,
+          swivel_feed: 15.0,
+          unit_override: "in",
+        };
+        setConfig(newCfg);
         const w = Number((Math.max(1, stats.bounds.width * 1.06 + 0.5)).toFixed(2));
         const h = Number((Math.max(1, stats.bounds.height * 1.06 + 0.5)).toFixed(2));
         setSheetConfig({
@@ -86,11 +85,17 @@ export const DragKnifeStudio: Component = () => {
           homeZ: stats.travel_height !== null ? Number(stats.travel_height.toFixed(2)) : 10.0,
           visible: true,
         });
+        await handleProcess(content, newCfg);
       } else {
         setUnit("mm");
-        if (config().blade_offset < 0.2) {
-          setConfig((c) => ({ ...c, blade_offset: 1.588, swivel_lift_height: 0.5, swivel_feed: 400.0 }));
-        }
+        const newCfg: DragKnifeConfig = {
+          ...config(),
+          blade_offset: 1.588,
+          swivel_lift_height: 0.5,
+          swivel_feed: 400.0,
+          unit_override: "mm",
+        };
+        setConfig(newCfg);
         const w = Number((Math.max(10, stats.bounds.width * 1.06 + 10)).toFixed(1));
         const h = Number((Math.max(10, stats.bounds.height * 1.06 + 10)).toFixed(1));
         setSheetConfig({
@@ -108,9 +113,8 @@ export const DragKnifeStudio: Component = () => {
           homeZ: stats.travel_height !== null ? Number(stats.travel_height.toFixed(1)) : 250.0,
           visible: true,
         });
+        await handleProcess(content, newCfg);
       }
-
-      await handleProcess(content);
     } catch (e) {
       console.error("Error analyzing G-code:", e);
     }
@@ -144,7 +148,7 @@ export const DragKnifeStudio: Component = () => {
       ...s,
       width: isInch ? Number((s.width / 25.4).toFixed(1)) : Number((s.width * 25.4).toFixed(0)),
       height: isInch ? Number((s.height / 25.4).toFixed(1)) : Number((s.height * 25.4).toFixed(0)),
-      thickness: isInch ? 0.055 : 1.4,
+      thickness: isInch ? Number((s.thickness / 25.4).toFixed(3)) : Number((s.thickness * 25.4).toFixed(2)),
       clearanceGap: isInch ? 2 : 50,
       plungeGap: isInch ? 1 : 25,
       homeZ: isInch ? 10 : 250,
@@ -155,27 +159,17 @@ export const DragKnifeStudio: Component = () => {
     }
   };
 
-  const handleConfigChange = (newConfig: DragKnifeConfig) => {
-    setConfig(newConfig);
-    if (currentFileContent()) {
-      handleProcess(currentFileContent(), newConfig);
-    }
-  };
-
   const handleProcess = async (
     content = currentFileContent(),
     cfg = config(),
   ) => {
     if (!content) return;
-    setIsProcessing(true);
     try {
       const result = await processDragKnifeGCode(content, cfg);
       setDragKnifeResult(result);
       setHudStats(result.hud_stats);
     } catch (err) {
       console.error("Failed to process drag knife toolpath:", err);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -212,20 +206,9 @@ export const DragKnifeStudio: Component = () => {
     }
   };
 
-  const handleSelectSample = (sample: SampleFile) => {
-    handleFileLoaded(sample.gcode, sample.filename);
-  };
-
-  onMount(() => {
-    if (SAMPLE_GCODE_FILES.length > 0) {
-      const defaultSample = SAMPLE_GCODE_FILES[0];
-      handleFileLoaded(defaultSample.gcode, defaultSample.filename);
-    }
-  });
-
   return (
     <div class="spark-app-layout">
-      {/* Hidden File Input */}
+      {/* Hidden Native File Picker Input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -241,12 +224,6 @@ export const DragKnifeStudio: Component = () => {
         unit={unit()}
         onUnitToggle={handleUnitToggle}
         onOpenFile={triggerOpenDialog}
-        onSelectSample={handleSelectSample}
-        activeTab={activeTab()}
-        onToggleTab={(tab) => {
-          setActiveTab(tab);
-          setIsSidebarOpen(true);
-        }}
         isSidebarOpen={isSidebarOpen()}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen())}
         onExport={handleExportGCode}
@@ -263,56 +240,19 @@ export const DragKnifeStudio: Component = () => {
             swivelArcs={dragKnifeResult()?.swivel_arcs ?? []}
             bladeOffset={config().blade_offset}
             unit={unit()}
-            sheetConfig={sheetConfig()}
+            sheetConfig={sheetConfig().width > 0 ? sheetConfig() : undefined}
           />
         </main>
 
-        {/* Right: Collapsible Inspector / Settings Panel */}
+        {/* Right: Read-Only Toolpath & Sheet Analysis Panel */}
         <Show when={isSidebarOpen()}>
-          <aside class="spark-right-sidebar">
-            <Show when={activeTab() === "sheet"}>
-              <SheetSettingsPanel
-                sheetConfig={sheetConfig()}
-                unit={unit()}
-                onUpdateSheet={(s) => setSheetConfig(s)}
-                onClose={() => setIsSidebarOpen(false)}
-              />
-            </Show>
-
-            <Show when={activeTab() === "dragknife"}>
-              <div class="spark-panel-scroll">
-                <ParameterControls
-                  config={config()}
-                  unit={unit()}
-                  onConfigChange={handleConfigChange}
-                  onUnitToggle={handleUnitToggle}
-                  onProcess={() => handleProcess()}
-                  isProcessing={isProcessing()}
-                  hasFile={Boolean(currentFileContent())}
-                />
-              </div>
-            </Show>
-
-            <Show when={activeTab() === "hud"}>
-              <div class="spark-panel-scroll">
-                <HudStatsCard
-                  stats={hudStats()}
-                  filename={currentFilename()}
-                  unit={unit()}
-                />
-              </div>
-            </Show>
-
-            <Show when={activeTab() === "gcode"}>
-              <div class="spark-panel-scroll">
-                <GCodeInspector
-                  originalGCode={currentFileContent()}
-                  processedGCode={dragKnifeResult()?.processed_gcode ?? ""}
-                  filename={currentFilename()}
-                />
-              </div>
-            </Show>
-          </aside>
+          <SheetSettingsPanel
+            sheetConfig={sheetConfig()}
+            hudStats={hudStats()}
+            filename={currentFilename()}
+            unit={unit()}
+            onClose={() => setIsSidebarOpen(false)}
+          />
         </Show>
       </div>
     </div>
