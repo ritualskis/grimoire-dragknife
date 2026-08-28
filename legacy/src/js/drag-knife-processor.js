@@ -741,14 +741,30 @@ class DragKnifeProcessor {
 
   
   /**
-   * Re-indexes closed contour loops so entry plunge occurs at the programmed 0 point
-   * (the first vertex of the contour) without relocating to the longest edge.
+   * Re-indexes closed contour loops so entry plunge occurs at the vertex
+   * closest to the work area zero point (X=0, Y=0 datum origin).
    */
   relocateClosedLoopToLongestStraight(segs) {
     if (!segs || segs.length < 2) return segs;
 
-    // Start directly from the 0 point (index 0 vertex of the programmed contour)
-    return segs;
+    // Find vertex closest to work area zero point (0, 0)
+    let minDistSq = Infinity;
+    let bestIdx = 0;
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i];
+      const distSq = seg.x1 * seg.x1 + seg.y1 * seg.y1;
+      if (distSq < minDistSq) {
+        minDistSq = distSq;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx === 0) return segs;
+
+    const reordered = [];
+    for (let k = bestIdx; k < segs.length; k++) reordered.push(segs[k]);
+    for (let k = 0; k < bestIdx; k++) reordered.push(segs[k]);
+    return reordered;
   }
 
   normalizeAngle(angle) {
