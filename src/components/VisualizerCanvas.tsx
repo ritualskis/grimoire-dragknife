@@ -100,8 +100,6 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       setSimProgress(t.progress);
     });
 
-    updatePlotterData(true);
-
     resizeObserver = new ResizeObserver(() => {
       handleResize();
     });
@@ -129,9 +127,13 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
     }
   });
 
+  let prevTargetCount = -1;
   createEffect(() => {
     if (plotter) {
-      updatePlotterData(false);
+      const count = props.originalContours.length;
+      const isNewFile = count !== prevTargetCount;
+      prevTargetCount = count;
+      updatePlotterData(isNewFile);
     }
   });
 
