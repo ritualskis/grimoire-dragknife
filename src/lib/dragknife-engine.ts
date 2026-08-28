@@ -41,6 +41,8 @@ interface ParsedProgram {
   plungeFeedrates: number[];
   cutFeedrates: number[];
   spindleCommands: string[];
+  parsedSwivels: SwivelArcInfo[];
+  isAlreadyCompensated: boolean;
   minZ?: number;
   maxZ?: number;
   zClearance?: number;
@@ -99,6 +101,13 @@ export function parseGCode(content: string): ParsedProgram {
   let maxZ: number | undefined;
   let zClearance: number | undefined;
   let zCut: number | undefined;
+
+  let isAlreadyCompensated =
+    content.includes("DRAGGED_ORIGIN") ||
+    content.includes("POST-PROCESSED BY: Dragged") ||
+    content.includes("Corner Swivel Compensation") ||
+    content.includes("Corner swivel #");
+  const parsedSwivels: SwivelArcInfo[] = [];
 
   let currentContour: Point3D[] | null = null;
   let currentContourFeed: number | null = null;
@@ -287,6 +296,55 @@ export function parseGCode(content: string): ParsedProgram {
           });
         }
         currentContour = null;
+      } else if (parsed.motion === "ArcCw" || parsed.motion === "ArcCcw") {
+        const iVal = parsed.i ?? 0;
+        const jVal = parsed.j ?? 0;
+        const cx = currentPos.x + iVal;
+        const cy = currentPos.y + jVal;
+        const r = Math.hypot(iVal, jVal);
+
+        if (r > 1e-4) {
+          const isCW = parsed.motion === "ArcCw";
+          const startAng = Math.atan2(currentPos.y - cy, currentPos.x - cx);
+          const endAng = Math.atan2(targetPt.y - cy, targetPt.x - cx);
+          let sweep = isCW ? startAng - endAng : endAng - startAng;
+          while (sweep < 0) sweep += 2 * Math.PI;
+          while (sweep > 2 * Math.PI) sweep -= 2 * Math.PI;
+
+          // Record pre-existing swivel arc
+          if (r < 25.0) {
+            isAlreadyCompensated = true;
+            parsedSwivels.push({
+              center: { x: cx, y: cy },
+              start: { x: currentPos.x, y: currentPos.y },
+              end: { x: targetPt.x, y: targetPt.y },
+              angle_deg: (sweep * 180) / Math.PI,
+              direction: isCW ? "CW" : "CCW",
+              radius: r,
+            });
+          }
+
+          const steps = Math.max(8, Math.ceil(sweep / (Math.PI / 16)));
+          currentContour ??= [{ x: currentPos.x, y: currentPos.y, z: currentPos.z }];
+
+          for (let s = 1; s <= steps; s++) {
+            const frac = s / steps;
+            const curAng = isCW ? startAng - sweep * frac : startAng + sweep * frac;
+            const px = cx + r * Math.cos(curAng);
+            const py = cy + r * Math.sin(curAng);
+            const pz = currentPos.z + (targetPt.z - currentPos.z) * frac;
+            const pt = { x: px, y: py, z: pz };
+            currentContour.push(pt);
+            allPoints.push(pt);
+          }
+        } else if (parsed.x !== undefined || parsed.y !== undefined) {
+          if (currentContour) {
+            currentContour.push(targetPt);
+          } else {
+            currentContour = [{ x: currentPos.x, y: currentPos.y, z: targetPt.z }, targetPt];
+          }
+          allPoints.push(targetPt);
+        }
       } else if (parsed.x !== undefined || parsed.y !== undefined) {
         if (currentContour) {
           const last = currentContour[currentContour.length - 1];
@@ -299,6 +357,7 @@ export function parseGCode(content: string): ParsedProgram {
             currentContour.push(targetPt);
           }
         }
+        allPoints.push(targetPt);
       }
     }
 
@@ -342,6 +401,8 @@ export function parseGCode(content: string): ParsedProgram {
     plungeFeedrates,
     cutFeedrates,
     spindleCommands,
+    parsedSwivels,
+    isAlreadyCompensated,
     minZ,
     maxZ,
     zClearance,
@@ -543,7 +604,7 @@ export function analyzeProgram(program: ParsedProgram, config: DragKnifeConfig):
     closed_contour_count: closedCount,
     open_contour_count: openCount,
     corner_count: cornerCount,
-    swivel_arc_count: cornerCount,
+    swivel_arc_count: program.parsedSwivels.length > 0 ? program.parsedSwivels.length : cornerCount,
     cycle_count: cycleCount,
     depth_pass_count: depthPassCount,
     stepdowns,
@@ -563,6 +624,19 @@ export function processDragKnifeProgram(
   config: DragKnifeConfig,
   hudStats: HUDStats,
 ): DragKnifeResult {
+  if (program.isAlreadyCompensated || program.parsedSwivels.length > 0) {
+    return {
+      processed_gcode: program.lines.map((l) => l.raw).join("\n"),
+      hud_stats: {
+        ...hudStats,
+        swivel_arc_count: program.parsedSwivels.length,
+      },
+      original_contours: program.contours,
+      processed_contours: program.contours,
+      swivel_arcs: program.parsedSwivels,
+    };
+  }
+
   const isMetric = (config.unit_override || program.detectedUnit) === "mm";
   const offset = config.blade_offset;
   const tolRad = degToRad(config.tolerance_angle_deg);
@@ -646,9 +720,15 @@ export function processDragKnifeProgram(
       outLines.push(`G1 X${spindleTarget.x.toFixed(4)} Y${spindleTarget.y.toFixed(4)} F${feed.toFixed(1)}`);
       machinePath.push({ x: spindleTarget.x, y: spindleTarget.y, z: cutZ });
 
-      if (i + 2 < n) {
-        const pFuture = pts2D[i + 2];
-        const uNext = normalize2D(pFuture.x - pNext.x, pFuture.y - pNext.y);
+      const pFutureOpt =
+        i + 2 < n
+          ? pts2D[i + 2]
+          : contour.is_closed && pts2D.length > 2
+            ? pts2D[1]
+            : null;
+
+      if (pFutureOpt) {
+        const uNext = normalize2D(pFutureOpt.x - pNext.x, pFutureOpt.y - pNext.y);
         if (uNext) {
           const dTheta = turnAngle(uCurr, uNext);
           const angleDeg = Math.abs(radToDeg(dTheta));
@@ -687,6 +767,15 @@ export function processDragKnifeProgram(
           }
         }
       }
+    }
+
+    if (contour.is_closed) {
+      const overcutDist = offset * 1.5;
+      const overcutEnd = offsetPoint(pts2D[0], u0, overcutDist + offset);
+      outLines.push(
+        `; Perimeter overcut to sever loop\nG1 X${overcutEnd.x.toFixed(4)} Y${overcutEnd.y.toFixed(4)} F${feed.toFixed(1)}`,
+      );
+      machinePath.push({ x: overcutEnd.x, y: overcutEnd.y, z: cutZ });
     }
 
     outLines.push(`G0 Z${zSafe.toFixed(4)}\n`);

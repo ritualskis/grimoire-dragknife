@@ -152,4 +152,49 @@ M30
 
     expect(res.processed_gcode).toContain("G3 X50.0000 Y1.6000");
   });
+
+  it("accurately parses pre-existing G2/G3 swivel arcs without doubling compensation", () => {
+    const gcode = `
+; ==================================================
+; POST-PROCESSED BY: Dragged /// Ritual Skis
+; ENGINE: Drag Knife Corner Swivel Compensation
+G21
+G90
+G0 Z5.0000
+G0 X136.1634 Y160.6682
+G1 Z-1.4000 F508
+; Corner swivel #1: sharp +90° turn at corner vertex (136.214, 167.018)
+G1 Z-0.6000 F600 ; Swivel lift
+G3 X142.5638 Y166.9663 I0.0506 J6.3498 F650
+G1 Z-1.4000 F600 ; Restore cut height
+G1 X144.7728 Y166.9483 F508
+G0 Z5.0000
+M30
+`;
+
+    const config: DragKnifeConfig = {
+      blade_offset: 6.35,
+      tolerance_angle_deg: 12.0,
+      swivel_lift_height: 0.8,
+      swivel_feed: 650,
+      disable_spindle: true,
+      unit_override: "mm",
+    };
+
+    const program = parseGCode(gcode);
+    expect(program.isAlreadyCompensated).toBe(true);
+    expect(program.parsedSwivels.length).toBe(1);
+    expect(program.parsedSwivels[0].direction).toBe("CCW");
+    expect(program.parsedSwivels[0].radius).toBeCloseTo(6.35, 2);
+    expect(program.parsedSwivels[0].angle_deg).toBeCloseTo(90, 1);
+    expect(program.parsedSwivels[0].center.x).toBeCloseTo(136.214, 2);
+    expect(program.parsedSwivels[0].center.y).toBeCloseTo(167.018, 2);
+
+    const stats = analyzeProgram(program, config);
+    expect(stats.swivel_arc_count).toBe(1);
+
+    const res = executeClientDragKnife(gcode, config);
+    expect(res.swivel_arcs.length).toBe(1);
+    expect(res.swivel_arcs[0].radius).toBeCloseTo(6.35, 2);
+  });
 });

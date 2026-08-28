@@ -72,6 +72,22 @@ pub fn analyze_program(program: &ParsedProgram, config: &DragKnifeConfig) -> HUD
                     }
                 }
             }
+
+            if c.is_closed && pts.len() >= 4 {
+                let p_prev = pts[pts.len() - 2].to_2d();
+                let p_curr = pts[0].to_2d();
+                let p_next = pts[1].to_2d();
+
+                let (v1_x, v1_y) = vector_2d(&p_prev, &p_curr);
+                let (v2_x, v2_y) = vector_2d(&p_curr, &p_next);
+
+                if let (Some(u1), Some(u2)) = (normalize_2d(v1_x, v1_y), normalize_2d(v2_x, v2_y)) {
+                    let angle = turn_angle(u1, u2).abs();
+                    if angle > tol_rad {
+                        corner_count += 1;
+                    }
+                }
+            }
         }
     }
 

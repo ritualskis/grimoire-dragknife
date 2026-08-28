@@ -112,8 +112,8 @@ M30
     };
 
     let res = process_dragknife(gcode, &config).expect("Processed closed box");
-    assert_eq!(res.hud_stats.corner_count, 3);
-    assert_eq!(res.swivel_arcs.len(), 3);
+    assert_eq!(res.hud_stats.corner_count, 4);
+    assert_eq!(res.swivel_arcs.len(), 4);
     for arc in &res.swivel_arcs {
         assert_eq!(arc.direction, "CCW");
         assert!((arc.angle_deg - 90.0).abs() < 1e-2);

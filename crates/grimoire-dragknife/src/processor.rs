@@ -102,8 +102,15 @@ pub fn process_dragknife_program(
             out_gcode.push_str(&format!("G1 X{:.4} Y{:.4} F{:.1}\n", spindle_target.x, spindle_target.y, feed));
             machine_path.push(Point3D::new(spindle_target.x, spindle_target.y, cut_z));
 
-            if i + 2 < n {
-                let p_future = pts_2d[i + 2];
+            let p_future_opt = if i + 2 < n {
+                Some(pts_2d[i + 2])
+            } else if contour.is_closed && pts_2d.len() >= 4 {
+                Some(pts_2d[1])
+            } else {
+                None
+            };
+
+            if let Some(p_future) = p_future_opt {
                 let (vf_x, vf_y) = vector_2d(&p_next, &p_future);
                 if let Some(u_next) = normalize_2d(vf_x, vf_y) {
                     let d_theta = turn_angle(u_curr, u_next);
@@ -151,6 +158,13 @@ pub fn process_dragknife_program(
                     }
                 }
             }
+        }
+
+        if contour.is_closed {
+            let overcut_dist = offset * 1.5;
+            let overcut_end = offset_point(&pts_2d[0], u0, overcut_dist + offset);
+            out_gcode.push_str(&format!("; Perimeter overcut to sever loop\nG1 X{:.4} Y{:.4} F{:.1}\n", overcut_end.x, overcut_end.y, feed));
+            machine_path.push(Point3D::new(overcut_end.x, overcut_end.y, cut_z));
         }
 
         out_gcode.push_str(&format!("G0 Z{:.4}\n\n", z_safe));

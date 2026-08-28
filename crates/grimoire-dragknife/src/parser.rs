@@ -281,6 +281,43 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
                             });
                         }
                     }
+                } else if parsed.motion == Some(MotionMode::ArcCw) || parsed.motion == Some(MotionMode::ArcCcw) {
+                    let i_val = parsed.i.unwrap_or(0.0);
+                    let j_val = parsed.j.unwrap_or(0.0);
+                    let cx = current_pos.x + i_val;
+                    let cy = current_pos.y + j_val;
+                    let r = (i_val * i_val + j_val * j_val).sqrt();
+
+                    if r > 1e-4 {
+                        let is_cw = parsed.motion == Some(MotionMode::ArcCw);
+                        let start_ang = (current_pos.y - cy).atan2(current_pos.x - cx);
+                        let end_ang = (target_pt.y - cy).atan2(target_pt.x - cx);
+                        let mut sweep = if is_cw { start_ang - end_ang } else { end_ang - start_ang };
+                        while sweep < 0.0 { sweep += 2.0 * std::f64::consts::PI; }
+                        while sweep > 2.0 * std::f64::consts::PI { sweep -= 2.0 * std::f64::consts::PI; }
+
+                        let steps = (sweep / (std::f64::consts::PI / 16.0)).ceil().max(8.0) as usize;
+                        let mut pts = current_contour.take().unwrap_or_else(|| vec![Point3D::new(current_pos.x, current_pos.y, current_pos.z)]);
+
+                        for s in 1..=steps {
+                            let frac = s as f64 / steps as f64;
+                            let cur_ang = if is_cw { start_ang - sweep * frac } else { start_ang + sweep * frac };
+                            let px = cx + r * cur_ang.cos();
+                            let py = cy + r * cur_ang.sin();
+                            let pz = current_pos.z + (target_pt.z - current_pos.z) * frac;
+                            let pt = Point3D::new(px, py, pz);
+                            pts.push(pt);
+                            all_points.push(pt);
+                        }
+                        current_contour = Some(pts);
+                    } else if parsed.x.is_some() || parsed.y.is_some() {
+                        if let Some(ref mut pts) = current_contour {
+                            pts.push(target_pt);
+                        } else {
+                            current_contour = Some(vec![Point3D::new(current_pos.x, current_pos.y, target_pt.z), target_pt]);
+                        }
+                        all_points.push(target_pt);
+                    }
                 } else if parsed.x.is_some() || parsed.y.is_some() {
                     if let Some(ref mut pts) = current_contour {
                         if let Some(last) = pts.last() {
