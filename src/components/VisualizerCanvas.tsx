@@ -9,7 +9,6 @@ import {
 import type { Contour, SheetConfig, SwivelArcInfo, Unit } from "../types/dragknife";
 import {
   GrimoirePlotter2D,
-  DragKnifePlotterAdapter,
   type LiveMotionTelemetry,
 } from "@grimoire/plotter-2d";
 
@@ -67,45 +66,13 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       swivelLiftHeight: 0.5,
     });
 
-    const targetGeometry = DragKnifePlotterAdapter.contoursToGeometry(
-      props.originalContours.map((c) => ({
-        id: String(c.id),
-        vertices: c.vertices,
-        is_closed: c.is_closed,
-        cut_depth: 0,
-      })),
-      "target_contours",
-    );
-
-    const spindleSegments = DragKnifePlotterAdapter.contoursToToolpaths(
-      props.processedContours.map((c) => ({
-        id: String(c.id),
-        vertices: c.vertices,
-        is_closed: c.is_closed,
-        cut_depth: 0,
-      })),
-      1500,
-      "spindle_path",
-    );
-
-    const swivelSegments = DragKnifePlotterAdapter.swivelsToToolpaths(
-      props.swivelArcs.map((sw) => ({
-        center: sw.center,
-        start: sw.start,
-        end: sw.end,
-        radius: sw.radius,
-        angle_deg: sw.angle_deg,
-        direction: sw.direction === "CW" ? "CW" : "CCW",
-      })),
-      "swivels",
-    );
-
-    if (props.sheetConfig) {
-      plotter.setSheetConfig(props.sheetConfig, false);
-    }
-
-    plotter.loadGeometry(targetGeometry, false);
-    plotter.loadToolpath([...spindleSegments, ...swivelSegments], autoFit);
+    plotter.loadDragKnifeData({
+      targetContours: props.originalContours,
+      spindleContours: props.processedContours,
+      swivelArcs: props.swivelArcs,
+      sheetConfig: props.sheetConfig,
+      autoFit,
+    });
   };
 
   onMount(() => {
@@ -123,20 +90,14 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       },
     });
 
-    if (props.sheetConfig) {
-      plotter.setSheetConfig(props.sheetConfig, false);
-    }
-
     plotter.resize(initW, initH);
+
+    plotter.onCursorMove = (pos) => {
+      setMouseCoord(pos);
+    };
 
     plotter.on("telemetry", (t: LiveMotionTelemetry) => {
       setSimProgress(t.progress);
-    });
-
-    plotter.on("hover", (data: any) => {
-      if (data && data.worldPos) {
-        setMouseCoord(data.worldPos);
-      }
     });
 
     updatePlotterData(true);
@@ -153,20 +114,18 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
     if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
     if (resizeObserver) resizeObserver.disconnect();
     window.removeEventListener("resize", handleResize);
-    if (plotter) plotter.pausePlayback();
+    if (plotter) plotter.destroy();
   });
 
   createEffect(() => {
     if (plotter) {
-      plotter.layerManager.setLayerVisibility("target_contours", showTarget());
-      plotter.layerManager.setLayerVisibility("spindle_path", showSpindle());
-      plotter.layerManager.setLayerVisibility("swivels", showSwivels());
-      plotter.layerManager.setLayerVisibility("rapids", showRapids());
-      plotter.isGridVisible = showGrid();
-      if (props.sheetConfig) {
-        plotter.setSheetConfig(props.sheetConfig, false);
-      }
-      plotter.render();
+      plotter.setLayers({
+        target: showTarget(),
+        spindle: showSpindle(),
+        swivels: showSwivels(),
+        rapids: showRapids(),
+        grid: showGrid(),
+      });
     }
   });
 
