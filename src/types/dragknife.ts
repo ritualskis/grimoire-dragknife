@@ -89,6 +89,9 @@ export interface HUDStats {
   cut_feedrate: number | null;
   feedrates: number[];
   spindle_commands: string[];
+  is_already_processed?: boolean;
+  detection_reason?: string | null;
+  has_embedded_original?: boolean;
 }
 
 export interface SwivelArcInfo {
@@ -114,6 +117,9 @@ export interface DragKnifeResult {
   original_contours: Contour[];
   processed_contours: Contour[];
   swivel_arcs: SwivelArcInfo[];
+  is_already_processed?: boolean;
+  detection_reason?: string | null;
+  restored_raw_gcode?: string | null;
 }
 
 export interface DragKnifePreset {

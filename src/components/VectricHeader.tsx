@@ -11,6 +11,7 @@ interface VectricHeaderProps {
   onToggleSidebar?: () => void;
   onExport?: () => void;
   hasFile?: boolean;
+  isAlreadyProcessed?: boolean;
 }
 
 export const VectricHeader: Component<VectricHeaderProps> = (props) => {
@@ -56,6 +57,19 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
             <span class="font-medium text-xs text-slate-200 truncate max-w-[260px]">
               {props.projectName || "No File Loaded"}
             </span>
+
+            {/* Post-Processed / Pre-Compensated Warning Badge */}
+            <Show when={props.isAlreadyProcessed}>
+              <span
+                class="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                title="This file contains pre-existing Drag Knife corner swivel compensation"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z" />
+                </svg>
+                <span>POST-PROCESSED</span>
+              </span>
+            </Show>
           </div>
         </div>
 

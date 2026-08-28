@@ -151,6 +151,12 @@ pub struct HUDStats {
     pub cut_feedrate: Option<f64>,
     pub feedrates: Vec<f64>,
     pub spindle_commands: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_already_processed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detection_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub has_embedded_original: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -179,4 +185,10 @@ pub struct DragKnifeResult {
     pub original_contours: Vec<Contour>,
     pub processed_contours: Vec<Contour>,
     pub swivel_arcs: Vec<SwivelArcInfo>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_already_processed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detection_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub restored_raw_gcode: Option<String>,
 }

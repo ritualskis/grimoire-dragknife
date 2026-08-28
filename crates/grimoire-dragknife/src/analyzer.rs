@@ -182,7 +182,11 @@ pub fn analyze_program(program: &ParsedProgram, config: &DragKnifeConfig) -> HUD
         closed_contour_count: closed_count,
         open_contour_count: open_count,
         corner_count,
-        swivel_arc_count: corner_count,
+        swivel_arc_count: if !program.parsed_swivels.is_empty() {
+            program.parsed_swivels.len()
+        } else {
+            corner_count
+        },
         cycle_count,
         depth_pass_count,
         stepdowns,
@@ -194,5 +198,8 @@ pub fn analyze_program(program: &ParsedProgram, config: &DragKnifeConfig) -> HUD
         cut_feedrate,
         feedrates: program.feedrates.clone(),
         spindle_commands: program.spindle_commands.clone(),
+        is_already_processed: Some(program.is_already_processed),
+        detection_reason: program.detection_reason.clone(),
+        has_embedded_original: Some(program.restored_raw_gcode.is_some()),
     }
 }

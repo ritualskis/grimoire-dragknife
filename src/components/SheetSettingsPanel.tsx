@@ -55,17 +55,48 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
 
           <Show when={h()}>
             {(stats) => (
-              <div class="grid grid-cols-3 gap-1 pt-2 border-t border-white/5 text-[10px] text-slate-400 font-mono text-center">
-                <div class="bg-black/30 py-1 rounded">
-                  <strong class="text-slate-200 block">{stats().total_lines}</strong> Lines
+              <>
+                {/* Compensation Status Indicator */}
+                <div
+                  class={`p-2 rounded border text-xs font-mono flex flex-col gap-0.5 ${
+                    stats().is_already_processed
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                      : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                  }`}
+                >
+                  <div class="flex items-center gap-1.5 font-bold">
+                    <span
+                      class={`w-2 h-2 rounded-full ${
+                        stats().is_already_processed ? "bg-amber-400 animate-pulse" : "bg-emerald-400"
+                      }`}
+                    />
+                    <span>
+                      {stats().is_already_processed
+                        ? "Post-Processed G-Code"
+                        : "Raw CAD/CAM Toolpath"}
+                    </span>
+                  </div>
+                  <span class="text-[10px] text-slate-400 pl-3.5 leading-tight">
+                    {stats().is_already_processed
+                      ? stats().detection_reason || "Pre-existing Donek / Vectric corner swivels"
+                      : "Ready for Donek drag knife compensation"}
+                  </span>
                 </div>
-                <div class="bg-black/30 py-1 rounded">
-                  <strong class="text-slate-200 block">{stats().depth_pass_count}</strong> {stats().depth_pass_count === 1 ? "Pass" : "Passes"}
+
+                <div class="grid grid-cols-3 gap-1 pt-1 border-t border-white/5 text-[10px] text-slate-400 font-mono text-center">
+                  <div class="bg-black/30 py-1 rounded">
+                    <strong class="text-slate-200 block">{stats().total_lines}</strong> Lines
+                  </div>
+                  <div class="bg-black/30 py-1 rounded">
+                    <strong class="text-slate-200 block">{stats().depth_pass_count}</strong>{" "}
+                    {stats().depth_pass_count === 1 ? "Pass" : "Passes"}
+                  </div>
+                  <div class="bg-black/30 py-1 rounded">
+                    <strong class="text-slate-200 block">{stats().cycle_count}</strong>{" "}
+                    {stats().cycle_count === 1 ? "Cycle" : "Cycles"}
+                  </div>
                 </div>
-                <div class="bg-black/30 py-1 rounded">
-                  <strong class="text-slate-200 block">{stats().cycle_count}</strong> {stats().cycle_count === 1 ? "Cycle" : "Cycles"}
-                </div>
-              </div>
+              </>
             )}
           </Show>
         </div>

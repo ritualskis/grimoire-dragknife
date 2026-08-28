@@ -9,6 +9,19 @@ pub fn process_dragknife_program(
     config: &DragKnifeConfig,
     hud_stats: HUDStats,
 ) -> DragKnifeResult {
+    if program.is_already_processed || !program.parsed_swivels.is_empty() {
+        return DragKnifeResult {
+            processed_gcode: program.lines.iter().map(|l| l.raw.as_str()).collect::<Vec<_>>().join("\n"),
+            hud_stats,
+            original_contours: program.contours.clone(),
+            processed_contours: program.contours.clone(),
+            swivel_arcs: program.parsed_swivels.clone(),
+            is_already_processed: Some(true),
+            detection_reason: program.detection_reason.clone(),
+            restored_raw_gcode: program.restored_raw_gcode.clone(),
+        };
+    }
+
     let mut out_gcode = String::new();
     let mut processed_contours = Vec::new();
     let mut swivel_arcs = Vec::new();
@@ -198,5 +211,8 @@ pub fn process_dragknife_program(
         original_contours: program.contours.clone(),
         processed_contours,
         swivel_arcs,
+        is_already_processed: Some(false),
+        detection_reason: None,
+        restored_raw_gcode: None,
     }
 }

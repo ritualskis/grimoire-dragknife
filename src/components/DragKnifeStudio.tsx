@@ -10,6 +10,7 @@ import {
   type Unit,
 } from "../types/dragknife";
 import { analyzeGCode, processDragKnifeGCode } from "../lib/tauri";
+import { embedDraggedManifest } from "../lib/dragknife-engine";
 
 export const DragKnifeStudio: Component = () => {
   const [currentFileContent, setCurrentFileContent] = createSignal<string>("");
@@ -179,13 +180,17 @@ export const DragKnifeStudio: Component = () => {
   const handleExportGCode = () => {
     const res = dragKnifeResult();
     if (!res || !res.processed_gcode) return;
-    const blob = new Blob([res.processed_gcode], { type: "text/plain;charset=utf-8" });
+    const rawGCode = currentFileContent();
+    const unitStr = unit() === "in" ? "G20 (Inches)" : "G21 (Millimeters)";
+    const finalExport = embedDraggedManifest(res.processed_gcode, rawGCode, unitStr);
+    const blob = new Blob([finalExport], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = currentFilename()
-      ? currentFilename().replace(/\.(gcode|nc|tap|txt)$/i, "_dragknife.nc")
-      : "dragknife_output.nc";
+    const originalName = currentFilename() || "toolpath.gcode";
+    a.download = originalName.startsWith("Dragged_")
+      ? originalName
+      : `Dragged_${originalName}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -231,12 +236,60 @@ export const DragKnifeStudio: Component = () => {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen())}
         onExport={handleExportGCode}
         hasFile={Boolean(currentFileContent())}
+        isAlreadyProcessed={Boolean(dragKnifeResult()?.is_already_processed ?? hudStats()?.is_already_processed)}
       />
 
       {/* Main Studio Viewport and Sidebars */}
       <div class="spark-main-workspace flex flex-1 overflow-hidden">
         {/* Center: CAD Canvas Viewport with Material Sheet */}
         <main class="spark-canvas-area flex flex-col flex-1 relative overflow-hidden">
+          {/* Floating Post-Processed Alert Banner */}
+          <Show when={dragKnifeResult()?.is_already_processed || hudStats()?.is_already_processed}>
+            <div class="absolute top-3 left-1/2 -translate-x-1/2 z-30 max-w-xl w-[92%] bg-slate-900/95 backdrop-blur border border-amber-500/50 shadow-2xl rounded-lg p-3 flex items-center justify-between gap-3 font-mono animate-in fade-in slide-in-from-top-2 duration-200">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="p-1.5 rounded-md bg-amber-500/20 text-amber-400 flex-shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z" />
+                  </svg>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-amber-300">
+                      Post-Processed G-Code Detected
+                    </span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                      {dragKnifeResult()?.swivel_arcs.length || hudStats()?.swivel_arc_count || 0} Swivels
+                    </span>
+                  </div>
+                  <span class="text-[11px] text-slate-300 truncate">
+                    {dragKnifeResult()?.detection_reason || hudStats()?.detection_reason || "File contains Drag Knife corner swivel compensation. Grimoire visualizes the true spindle toolpath and swivels directly."}
+                  </span>
+                </div>
+              </div>
+
+              {/* Optional Revert to Raw Button if Embedded Original Exists */}
+              <Show when={dragKnifeResult()?.restored_raw_gcode}>
+                <button
+                  type="button"
+                  class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 border border-amber-500/40 rounded transition-colors cursor-pointer"
+                  onClick={() => {
+                    const raw = dragKnifeResult()?.restored_raw_gcode;
+                    if (raw) {
+                      handleFileLoaded(raw, currentFilename().replace(/^Dragged_/i, ""));
+                    }
+                  }}
+                  title="Revert file back to raw un-compensated G-code"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  <span>Revert to Raw</span>
+                </button>
+              </Show>
+            </div>
+          </Show>
+
           <VisualizerCanvas
             originalContours={dragKnifeResult()?.original_contours ?? []}
             processedContours={dragKnifeResult()?.processed_contours ?? []}

@@ -1,5 +1,5 @@
-use crate::geometry::dist_3d;
-use crate::types::{Contour, MotionMode, Point3D, Unit};
+use crate::geometry::{dist_3d, rad_to_deg};
+use crate::types::{Contour, MotionMode, Point2D, Point3D, SwivelArcInfo, Unit};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedLine {
@@ -34,6 +34,10 @@ pub struct ParsedProgram {
     pub plunge_feedrates: Vec<f64>,
     pub cut_feedrates: Vec<f64>,
     pub spindle_commands: Vec<String>,
+    pub parsed_swivels: Vec<SwivelArcInfo>,
+    pub is_already_processed: bool,
+    pub detection_reason: Option<String>,
+    pub restored_raw_gcode: Option<String>,
     pub min_z: Option<f64>,
     pub max_z: Option<f64>,
     pub z_clearance: Option<f64>,
@@ -50,6 +54,7 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
     let mut plunge_feedrates = Vec::new();
     let mut cut_feedrates = Vec::new();
     let mut spindle_commands = Vec::new();
+    let mut parsed_swivels = Vec::new();
 
     let mut min_z: Option<f64> = None;
     let mut max_z: Option<f64> = None;
@@ -57,6 +62,35 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
     let mut z_cut: Option<f64> = None;
     let mut rapid_z_levels: Vec<f64> = Vec::new();
     let mut cut_z_levels: Vec<f64> = Vec::new();
+
+    let mut combined_b64 = String::new();
+    let mut is_already_processed = false;
+    let mut detection_reason = None;
+
+    if content.contains("; POST-PROCESSED BY: Dragged")
+        || content.contains("; MODIFIED BY: Dragged")
+        || content.contains("; ENGINE: Drag Knife")
+        || content.contains("Corner Swivel Compensation")
+        || content.contains("; Grimoire DragKnife Post-Processor")
+    {
+        is_already_processed = true;
+        detection_reason = Some("Grimoire / Dragged Post-Processed G-Code".to_string());
+    }
+
+    for line in content.lines() {
+        if let Some(idx) = line.find(";DRAGGED_ORIGIN:") {
+            let chunk = line[idx + ";DRAGGED_ORIGIN:".len()..].trim();
+            combined_b64.push_str(chunk);
+        }
+    }
+
+    let restored_raw_gcode = if !combined_b64.is_empty() {
+        is_already_processed = true;
+        detection_reason = Some("Reversible Dragged Manifest (Embedded Raw Source Available)".to_string());
+        decode_base64_manifest(&combined_b64)
+    } else {
+        None
+    };
 
     let mut current_contour: Option<Vec<Point3D>> = None;
     let mut current_contour_feed: Option<f64> = None;
@@ -296,6 +330,21 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
                         while sweep < 0.0 { sweep += 2.0 * std::f64::consts::PI; }
                         while sweep > 2.0 * std::f64::consts::PI { sweep -= 2.0 * std::f64::consts::PI; }
 
+                        if r <= 25.0 {
+                            if !is_already_processed {
+                                is_already_processed = true;
+                                detection_reason = Some("Donek / Vectric Drag Knife Corner Swivels Detected".to_string());
+                            }
+                            parsed_swivels.push(SwivelArcInfo {
+                                center: Point2D::new(cx, cy),
+                                start: Point2D::new(current_pos.x, current_pos.y),
+                                end: Point2D::new(target_pt.x, target_pt.y),
+                                angle_deg: rad_to_deg(sweep).abs(),
+                                direction: if is_cw { "CW".to_string() } else { "CCW".to_string() },
+                                radius: r,
+                            });
+                        }
+
                         let steps = (sweep / (std::f64::consts::PI / 16.0)).ceil().max(8.0) as usize;
                         let mut pts = current_contour.take().unwrap_or_else(|| vec![Point3D::new(current_pos.x, current_pos.y, current_pos.z)]);
 
@@ -379,11 +428,53 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
         plunge_feedrates,
         cut_feedrates,
         spindle_commands,
+        parsed_swivels,
+        is_already_processed,
+        detection_reason,
+        restored_raw_gcode,
         min_z,
         max_z,
         z_clearance,
         z_cut,
     }
+}
+
+fn decode_base64_manifest(b64: &str) -> Option<String> {
+    const B64_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut clean = Vec::new();
+    for byte in b64.bytes() {
+        if B64_TABLE.contains(&byte) || byte == b'=' {
+            clean.push(byte);
+        }
+    }
+    if clean.is_empty() {
+        return None;
+    }
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < clean.len() {
+        let b0 = clean.get(i).copied().unwrap_or(b'=');
+        let b1 = clean.get(i + 1).copied().unwrap_or(b'=');
+        let b2 = clean.get(i + 2).copied().unwrap_or(b'=');
+        let b3 = clean.get(i + 3).copied().unwrap_or(b'=');
+        i += 4;
+
+        let v0 = B64_TABLE.iter().position(|&x| x == b0);
+        let v1 = B64_TABLE.iter().position(|&x| x == b1);
+        let v2 = B64_TABLE.iter().position(|&x| x == b2);
+        let v3 = B64_TABLE.iter().position(|&x| x == b3);
+
+        if let (Some(u0), Some(u1)) = (v0, v1) {
+            out.push(((u0 << 2) | (u1 >> 4)) as u8);
+            if let Some(u2) = v2 {
+                out.push((((u1 & 0x0F) << 4) | (u2 >> 2)) as u8);
+                if let Some(u3) = v3 {
+                    out.push((((u2 & 0x03) << 6) | u3) as u8);
+                }
+            }
+        }
+    }
+    String::from_utf8(out).ok()
 }
 
 fn compute_path_length(pts: &[Point3D]) -> f64 {

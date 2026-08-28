@@ -43,6 +43,8 @@ interface ParsedProgram {
   spindleCommands: string[];
   parsedSwivels: SwivelArcInfo[];
   isAlreadyCompensated: boolean;
+  detectionReason: string | null;
+  restoredRawGCode: string | null;
   minZ?: number;
   maxZ?: number;
   zClearance?: number;
@@ -84,6 +86,88 @@ export function offsetPoint(pt: Point2D, dir: [number, number], dist: number): P
   };
 }
 
+export function detectDraggedManifest(rawText: string): {
+  isAlreadyProcessed: boolean;
+  restoredRawGCode: string | null;
+  detectionReason: string | null;
+} {
+  let isAlreadyProcessed = false;
+  let detectionReason: string | null = null;
+  let restored: string | null = null;
+
+  if (
+    rawText.includes("; POST-PROCESSED BY: Dragged") ||
+    rawText.includes("; MODIFIED BY: Dragged") ||
+    rawText.includes("Corner Swivel Compensation") ||
+    rawText.includes("; Grimoire DragKnife Post-Processor")
+  ) {
+    isAlreadyProcessed = true;
+    detectionReason = "Grimoire / Dragged Post-Processed G-Code";
+  }
+
+  const regex = /;\s*;DRAGGED_ORIGIN:([A-Za-z0-9+/=]+)/g;
+  let match: RegExpExecArray | null;
+  let combinedB64 = "";
+  while ((match = regex.exec(rawText)) !== null) {
+    if (match[1]) combinedB64 += match[1];
+  }
+
+  if (combinedB64) {
+    try {
+      if (typeof atob !== "undefined") {
+        restored = atob(combinedB64);
+      } else {
+        restored = Buffer.from(combinedB64, "base64").toString("utf-8");
+      }
+      isAlreadyProcessed = true;
+      detectionReason = "Reversible Dragged Manifest (Embedded Raw Source Available)";
+    } catch (e) {
+      console.warn("Could not decode DRAGGED_ORIGIN manifest:", e);
+    }
+  }
+
+  return { isAlreadyProcessed, restoredRawGCode: restored, detectionReason };
+}
+
+export function embedDraggedManifest(
+  processedGCode: string,
+  originalRawGCode: string,
+  unitStr: string,
+): string {
+  let b64 = "";
+  try {
+    if (typeof btoa !== "undefined") {
+      b64 = btoa(originalRawGCode);
+    } else {
+      b64 = Buffer.from(originalRawGCode, "utf-8").toString("base64");
+    }
+  } catch (e) {
+    console.warn("Could not encode DRAGGED_ORIGIN manifest:", e);
+  }
+
+  const chunkLen = 50;
+  const manifestChunks: string[] = [];
+  for (let i = 0; i < b64.length; i += chunkLen) {
+    manifestChunks.push(`; ;DRAGGED_ORIGIN:${b64.slice(i, i + chunkLen)}`);
+  }
+
+  const nowIso = new Date().toISOString();
+  const header = [
+    "; ==================================================",
+    "; POST-PROCESSED BY: Dragged /// Ritual Skis",
+    "; ENGINE: Drag Knife Corner Swivel Compensation",
+    `; UNIT MODE: ${unitStr}`,
+    `; DATE: ${nowIso}`,
+    "; --------------------------------------------------",
+    "; REVERSIBLE ORIGINAL SOURCE (Dragged /// Ritual Skis):",
+    ...manifestChunks,
+    "; ==================================================",
+    "",
+  ].join("\n");
+
+  return header + processedGCode;
+}
+
 export function parseGCode(content: string): ParsedProgram {
   const lines: ParsedLine[] = [];
   let currentPos: Point3D = { x: 0, y: 0, z: 0 };
@@ -102,11 +186,10 @@ export function parseGCode(content: string): ParsedProgram {
   let zClearance: number | undefined;
   let zCut: number | undefined;
 
-  let isAlreadyCompensated =
-    content.includes("DRAGGED_ORIGIN") ||
-    content.includes("POST-PROCESSED BY: Dragged") ||
-    content.includes("Corner Swivel Compensation") ||
-    content.includes("Corner swivel #");
+  const manifest = detectDraggedManifest(content);
+  let isAlreadyCompensated = manifest.isAlreadyProcessed;
+  let detectionReason = manifest.detectionReason;
+  const restoredRawGCode = manifest.restoredRawGCode;
   const parsedSwivels: SwivelArcInfo[] = [];
 
   let currentContour: Point3D[] | null = null;
@@ -403,6 +486,8 @@ export function parseGCode(content: string): ParsedProgram {
     spindleCommands,
     parsedSwivels,
     isAlreadyCompensated,
+    detectionReason,
+    restoredRawGCode,
     minZ,
     maxZ,
     zClearance,
@@ -616,6 +701,9 @@ export function analyzeProgram(program: ParsedProgram, config: DragKnifeConfig):
     cut_feedrate: program.cutFeedrates[0] ?? program.feedrates[0] ?? null,
     feedrates: program.feedrates,
     spindle_commands: program.spindleCommands,
+    is_already_processed: program.isAlreadyCompensated,
+    detection_reason: program.detectionReason,
+    has_embedded_original: Boolean(program.restoredRawGCode),
   };
 }
 
@@ -630,10 +718,16 @@ export function processDragKnifeProgram(
       hud_stats: {
         ...hudStats,
         swivel_arc_count: program.parsedSwivels.length,
+        is_already_processed: true,
+        detection_reason: program.detectionReason,
+        has_embedded_original: Boolean(program.restoredRawGCode),
       },
       original_contours: program.contours,
       processed_contours: program.contours,
       swivel_arcs: program.parsedSwivels,
+      is_already_processed: true,
+      detection_reason: program.detectionReason,
+      restored_raw_gcode: program.restoredRawGCode,
     };
   }
 
@@ -802,10 +896,16 @@ export function processDragKnifeProgram(
 
   return {
     processed_gcode: outLines.join("\n"),
-    hud_stats: hudStats,
+    hud_stats: {
+      ...hudStats,
+      is_already_processed: false,
+    },
     original_contours: program.contours,
     processed_contours: processedContours,
     swivel_arcs: swivelArcs,
+    is_already_processed: false,
+    detection_reason: null,
+    restored_raw_gcode: null,
   };
 }
 
