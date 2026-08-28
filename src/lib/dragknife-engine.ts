@@ -321,8 +321,11 @@ export function parseGCode(content: string): ParsedProgram {
     });
   }
 
-  if (!hasExplicitUnit && minZ !== undefined && maxZ !== undefined) {
-    if (minZ < -25 || maxZ > 100) {
+  if (!hasExplicitUnit) {
+    const maxX = Math.max(...allPoints.map((p) => Math.abs(p.x)), 0);
+    const maxY = Math.max(...allPoints.map((p) => Math.abs(p.y)), 0);
+    const maxF = Math.max(...feedrates, 0);
+    if (maxX > 150 || maxY > 150 || maxF > 250 || (minZ !== undefined && minZ < -25)) {
       detectedUnit = "mm";
     }
   }

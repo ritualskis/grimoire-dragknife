@@ -171,90 +171,103 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
       <div class="canvas-wrapper flex-1 relative" ref={wrapperRef}>
         <canvas ref={canvasRef} class="interactive-canvas" />
 
-        {/* Top-Right Spark View Mode & Zoom Controls */}
-        <div class="spark-canvas-top-controls flex items-center gap-1.5 absolute top-3 right-3 z-10">
-          <button type="button" class="spark-viewmode-btn active" title="2D Orthogonal View">
-            2D
-          </button>
-          <button type="button" class="spark-zoom-icon-btn" onClick={zoomIn} title="Zoom In (+)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="11" y1="8" x2="11" y2="14" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-            </svg>
-          </button>
-          <button type="button" class="spark-zoom-icon-btn" onClick={zoomOut} title="Zoom Out (-)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-            </svg>
-          </button>
-          <button type="button" class="spark-zoom-icon-btn" onClick={zoomToFit} title="Zoom to Fit Sheet & Vectors">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 3h6v6M9 21H3v-6M21 9v6M3 9v6" />
-              <rect x="7" y="7" width="10" height="10" rx="1" />
-            </svg>
-          </button>
-        </div>
+        {/* Top Floating Controls Bar */}
+        <div class="spark-canvas-header-bar">
+          {/* Left: View/Zoom Tools + Layer Visibility */}
+          <div class="spark-control-group">
+            <button type="button" class="spark-viewmode-btn active" title="2D Orthogonal View">
+              2D
+            </button>
+            <button type="button" class="spark-zoom-icon-btn" onClick={zoomIn} title="Zoom In (+)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="11" y1="8" x2="11" y2="14" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+            </button>
+            <button type="button" class="spark-zoom-icon-btn" onClick={zoomOut} title="Zoom Out (-)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+            </button>
+            <button type="button" class="spark-zoom-icon-btn" onClick={zoomToFit} title="Zoom to Fit View (F)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h6v6M9 21H3v-6M21 9v6M3 9v6" />
+                <rect x="7" y="7" width="10" height="10" rx="1" />
+              </svg>
+            </button>
 
-        {/* Top-Left Layer Badges */}
-        <div class="spark-layer-pills flex items-center gap-1.5 absolute top-3 left-3 z-10">
-          <button
-            type="button"
-            class={`spark-layer-pill ${showTarget() ? "active" : ""}`}
-            onClick={() => setShowTarget(!showTarget())}
-            title="Toggle Target Cut Shape"
-          >
-            <span class="legend-dot legend-target" />
-            <span>Target Contour</span>
-          </button>
+            <div class="h-4 w-px bg-white/10 mx-1" />
 
-          <button
-            type="button"
-            class={`spark-layer-pill ${showSpindle() ? "active" : ""}`}
-            onClick={() => setShowSpindle(!showSpindle())}
-            title="Toggle Spindle Center Offset Toolpath"
-          >
-            <span class="legend-dot legend-spindle" />
-            <span>Spindle Path</span>
-          </button>
+            <button
+              type="button"
+              class={`spark-layer-pill ${showTarget() ? "active" : ""}`}
+              onClick={() => setShowTarget(!showTarget())}
+              title="Toggle Target Contour"
+            >
+              <span class="legend-dot legend-target" />
+              <span>Target</span>
+            </button>
 
-          <button
-            type="button"
-            class={`spark-layer-pill ${showSwivels() ? "active" : ""}`}
-            onClick={() => setShowSwivels(!showSwivels())}
-            title="Toggle Swivel Arcs"
-          >
-            <span class="legend-dot legend-swivel" />
-            <span>Swivels</span>
-          </button>
+            <button
+              type="button"
+              class={`spark-layer-pill ${showSpindle() ? "active" : ""}`}
+              onClick={() => setShowSpindle(!showSpindle())}
+              title="Toggle Spindle Path"
+            >
+              <span class="legend-dot legend-spindle" />
+              <span>Spindle</span>
+            </button>
 
-          <button
-            type="button"
-            class={`spark-layer-pill ${showRapids() ? "active" : ""}`}
-            onClick={() => setShowRapids(!showRapids())}
-            title="Toggle Rapid Moves"
-          >
-            <span class="legend-dot legend-rapid" />
-            <span>Rapids</span>
-          </button>
+            <button
+              type="button"
+              class={`spark-layer-pill ${showSwivels() ? "active" : ""}`}
+              onClick={() => setShowSwivels(!showSwivels())}
+              title="Toggle Swivels"
+            >
+              <span class="legend-dot legend-swivel" />
+              <span>Swivels</span>
+            </button>
 
-          <button
-            type="button"
-            class={`spark-layer-pill ${showGrid() ? "active" : ""}`}
-            onClick={() => setShowGrid(!showGrid())}
-            title="Toggle Grid"
-          >
-            <span>Grid</span>
-          </button>
+            <button
+              type="button"
+              class={`spark-layer-pill ${showRapids() ? "active" : ""}`}
+              onClick={() => setShowRapids(!showRapids())}
+              title="Toggle Rapid Moves"
+            >
+              <span class="legend-dot legend-rapid" />
+              <span>Rapids</span>
+            </button>
+
+            <button
+              type="button"
+              class={`spark-layer-pill ${showGrid() ? "active" : ""}`}
+              onClick={() => setShowGrid(!showGrid())}
+              title="Toggle Grid"
+            >
+              <span>Grid</span>
+            </button>
+          </div>
+
+          {/* Right: Precision Coordinate HUD */}
+          <Show when={mouseCoord()}>
+            {(coord) => (
+              <div class="coord-readout font-mono">
+                <span>X: <strong class="text-white">{coord().x.toFixed(3)}</strong> {props.unit}</span>
+                <span class="coord-divider">|</span>
+                <span>Y: <strong class="text-white">{coord().y.toFixed(3)}</strong> {props.unit}</span>
+              </div>
+            )}
+          </Show>
         </div>
 
         {/* Empty State Overlay */}
         <Show when={props.originalContours.length === 0}>
           <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-            <div class="p-6 rounded-xl bg-slate-900/85 border border-slate-800 backdrop-blur text-center max-w-sm">
+            <div class="p-6 rounded-xl bg-black/75 border border-white/10 backdrop-blur text-center max-w-sm shadow-2xl">
               <svg class="mx-auto mb-3 text-slate-500" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
@@ -266,78 +279,65 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
             </div>
           </div>
         </Show>
-
-        {/* Precision Coordinate HUD */}
-        <Show when={mouseCoord()}>
-          {(coord) => (
-            <div class="coord-readout font-mono absolute bottom-12 left-4 z-10">
-              <span class="coord-item">X: <strong class="text-primary">{coord().x.toFixed(3)}</strong> {props.unit}</span>
-              <span class="coord-divider">|</span>
-              <span class="coord-item">Y: <strong class="text-primary">{coord().y.toFixed(3)}</strong> {props.unit}</span>
-            </div>
-          )}
-        </Show>
-
-        {/* Floating Bottom Hint Ribbon */}
-        <div class="spark-bottom-hint-ribbon absolute bottom-2 inset-x-8 z-10">
-          <div class="hint-pill flex items-center justify-between">
-            <span class="hint-text truncate">
-              Drag or Middle-Click to pan | Scroll or Pinch to zoom | Double-click or press <strong>F</strong> to fit workpiece | Space + Drag to navigate
-            </span>
-            <span class="hint-question-btn" title="Double click canvas to fit view">?</span>
-          </div>
-        </div>
       </div>
 
-      {/* Bottom Animation & Scrubber Transport Bar */}
-      <div class="sim-control-bar flex items-center gap-3">
-        <button
-          type="button"
-          class={`sim-play-btn ${isPlaying() ? "playing" : ""}`}
-          onClick={togglePlay}
-          title={isPlaying() ? "Pause Simulator" : "Play Blade Motion Simulation"}
-        >
-          {isPlaying() ? "PAUSE" : "PLAY"}
-        </button>
+      {/* Bottom Animation & Scrubber Footer Bar */}
+      <div class="spark-canvas-footer-bar">
+        <div class="sim-control-bar">
+          <button
+            type="button"
+            class={`sim-play-btn ${isPlaying() ? "playing" : ""}`}
+            onClick={togglePlay}
+            title={isPlaying() ? "Pause Simulator" : "Play Blade Motion Simulation"}
+          >
+            {isPlaying() ? "PAUSE" : "PLAY"}
+          </button>
 
-        <span class="text-xs font-mono text-secondary">Timeline:</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.001"
-          value={simProgress()}
-          onInput={(e) => handleScrubberInput(parseFloat(e.currentTarget.value))}
-          class="sim-scrubber flex-1"
-        />
+          <div class="sim-slider-container">
+            <span class="text-[11px] font-mono text-slate-400">Timeline</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value={simProgress()}
+              onInput={(e) => handleScrubberInput(parseFloat(e.currentTarget.value))}
+              class="sim-scrubber"
+            />
+            <span class="text-[11px] font-mono font-bold text-slate-200 w-9 text-right">
+              {(simProgress() * 100).toFixed(0)}%
+            </span>
+          </div>
 
-        <div class="speed-selector flex items-center gap-1">
-          <button
-            type="button"
-            class={`speed-btn ${speedMultiplier() === 0.5 ? "active" : ""}`}
-            onClick={() => handleSpeedChange(0.5)}
-          >
-            0.5x
-          </button>
-          <button
-            type="button"
-            class={`speed-btn ${speedMultiplier() === 1.0 ? "active" : ""}`}
-            onClick={() => handleSpeedChange(1.0)}
-          >
-            1x
-          </button>
-          <button
-            type="button"
-            class={`speed-btn ${speedMultiplier() === 2.0 ? "active" : ""}`}
-            onClick={() => handleSpeedChange(2.0)}
-          >
-            2x
-          </button>
+          <div class="sim-speed-pill">
+            <button
+              type="button"
+              class={`sim-speed-btn ${speedMultiplier() === 0.5 ? "active" : ""}`}
+              onClick={() => handleSpeedChange(0.5)}
+            >
+              0.5x
+            </button>
+            <button
+              type="button"
+              class={`sim-speed-btn ${speedMultiplier() === 1.0 ? "active" : ""}`}
+              onClick={() => handleSpeedChange(1.0)}
+            >
+              1x
+            </button>
+            <button
+              type="button"
+              class={`sim-speed-btn ${speedMultiplier() === 2.0 ? "active" : ""}`}
+              onClick={() => handleSpeedChange(2.0)}
+            >
+              2x
+            </button>
+          </div>
         </div>
 
-        <span class="text-xs font-mono text-primary progress-indicator">
-          {(simProgress() * 100).toFixed(0)}%
-        </span>
+        {/* Navigation Hint */}
+        <div class="sim-nav-hint hidden md:block">
+          Pan: <span class="text-slate-300">Drag / Middle-Click</span> · Zoom: <span class="text-slate-300">Scroll</span> · Fit: <span class="text-slate-300">F</span>
+        </div>
       </div>
     </div>
   );

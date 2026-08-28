@@ -16,17 +16,21 @@ interface VectricHeaderProps {
 export const VectricHeader: Component<VectricHeaderProps> = (props) => {
   return (
     <header class="spark-main-header">
-      <div class="spark-app-menubar flex items-center justify-between px-3 py-1">
+      <div class="spark-app-menubar flex items-center justify-between px-3.5">
         {/* Left: Branding & Open File */}
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2">
-            <div class="spark-logo-icon font-black text-black">
+            <div class="spark-logo-icon">
               <span>DK</span>
             </div>
-            <span class="font-bold text-white text-sm tracking-wide">Grimoire DragKnife</span>
+            <div class="flex flex-col">
+              <span class="font-extrabold text-white text-xs tracking-wider uppercase font-mono">
+                Grimoire <span class="text-rose-500">///</span> DragKnife
+              </span>
+            </div>
           </div>
 
-          <div class="h-4 w-px bg-slate-700 mx-1" />
+          <div class="h-4 w-px bg-white/10 mx-1" />
 
           {/* Open Local G-Code Button */}
           <button
@@ -44,8 +48,8 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
           </button>
 
           {/* Current Loaded File Badge */}
-          <div class="spark-sheet-pill flex items-center gap-2">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div class="spark-sheet-pill flex items-center gap-2 font-mono">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>

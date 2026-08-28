@@ -20,9 +20,8 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
       {/* Panel Header */}
       <div class="sheet-header flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <h2 class="sheet-title font-bold text-white text-sm tracking-wide">
-            TOOLPATH & SHEET ANALYSIS
-          </h2>
+          <span class="w-1.5 h-3 bg-rose-500 rounded-sm" />
+          <h2 class="sheet-title">TOOLPATH & SHEET ANALYSIS</h2>
         </div>
         <button
           type="button"
@@ -38,33 +37,42 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
 
       <div class="sheet-scroll-body flex flex-col gap-3">
         {/* File / Program Badge */}
-        <div class="sheet-section surface-card p-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300 truncate max-w-[200px]">
-              {props.filename || "No File Loaded"}
-            </span>
+        <div class="sheet-card flex flex-col gap-2">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-white font-mono truncate" title={props.filename || "No File Loaded"}>
+                {props.filename || "No File Loaded"}
+              </span>
+            </div>
             <Show when={h()}>
               {(stats) => (
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-purple-300 border border-slate-700">
+                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap flex-shrink-0">
                   {stats().unit}
                 </span>
               )}
             </Show>
           </div>
+
           <Show when={h()}>
             {(stats) => (
-              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
-                <span>{stats().total_lines} Lines</span>
-                <span>{stats().depth_pass_count} {stats().depth_pass_count === 1 ? "Pass" : "Passes"}</span>
-                <span>{stats().cycle_count} {stats().cycle_count === 1 ? "Cycle" : "Cycles"}</span>
+              <div class="grid grid-cols-3 gap-1 pt-2 border-t border-white/5 text-[10px] text-slate-400 font-mono text-center">
+                <div class="bg-black/30 py-1 rounded">
+                  <strong class="text-slate-200 block">{stats().total_lines}</strong> Lines
+                </div>
+                <div class="bg-black/30 py-1 rounded">
+                  <strong class="text-slate-200 block">{stats().depth_pass_count}</strong> {stats().depth_pass_count === 1 ? "Pass" : "Passes"}
+                </div>
+                <div class="bg-black/30 py-1 rounded">
+                  <strong class="text-slate-200 block">{stats().cycle_count}</strong> {stats().cycle_count === 1 ? "Cycle" : "Cycles"}
+                </div>
               </div>
             )}
           </Show>
         </div>
 
         {/* Section 1: Material Size (Parsed Bounds) */}
-        <div class="sheet-section">
-          <span class="sheet-section-heading">Material Stock (Envelope)</span>
+        <div class="sheet-card">
+          <span class="sheet-section-title">Material Stock (Envelope)</span>
           <div class="sheet-row-2">
             <div class="sheet-field">
               <span class="sheet-label">Width (X)</span>
@@ -93,8 +101,8 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
         </div>
 
         {/* Section 2: Position & Datum Origin */}
-        <div class="sheet-section">
-          <span class="sheet-section-heading">Datum & Origin</span>
+        <div class="sheet-card">
+          <span class="sheet-section-title">Datum & Origin</span>
           <div class="sheet-position-grid">
             <div class="sheet-xy-inputs flex flex-col gap-2">
               <div class="sheet-field">
@@ -127,26 +135,26 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
                 <span class="datum-guide-h" />
                 <div class="datum-dot" title="Bottom-Right" />
               </div>
-              <span class="text-[9px] text-slate-400 text-center font-mono mt-1">X0 Y0</span>
+              <span class="text-[8px] text-slate-400 text-center font-mono mt-1 tracking-tighter">X0 Y0</span>
             </div>
           </div>
         </div>
 
         {/* Section 3: Z-Zero Reference */}
-        <div class="sheet-section">
-          <span class="sheet-section-heading">Z-Zero Reference</span>
-          <div class="sheet-z-zero-grid flex items-center justify-between">
-            <div class="sheet-readout-badge flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400" />
-              <span class="text-xs font-semibold text-slate-200">Material Top Surface (Z=0)</span>
+        <div class="sheet-card">
+          <span class="sheet-section-title">Z-Zero Reference</span>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+              <span class="text-xs font-semibold text-slate-200">Material Top (Z=0)</span>
             </div>
 
-            {/* 3D Isometric Material Block Illustration */}
+            {/* 3D Isometric Material Block */}
             <div class="z-zero-diagram">
-              <svg width="56" height="40" viewBox="0 0 64 48" fill="none">
-                <polygon points="32,4 58,16 32,28 6,16" fill="#ef4444" opacity="1" />
-                <polygon points="6,16 32,28 32,44 6,32" fill="#b45309" opacity="0.85" />
-                <polygon points="58,16 32,28 32,44 58,32" fill="#78350f" opacity="0.95" />
+              <svg width="48" height="34" viewBox="0 0 64 48" fill="none">
+                <polygon points="32,4 58,16 32,28 6,16" fill="#e63946" opacity="0.9" />
+                <polygon points="6,16 32,28 32,44 6,32" fill="#1e2330" />
+                <polygon points="58,16 32,28 32,44 58,32" fill="#14171d" />
                 <polygon points="32,4 58,16 32,28 6,16" stroke="#fca5a5" stroke-width="1.2" fill="none" />
               </svg>
             </div>
@@ -154,10 +162,10 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
         </div>
 
         {/* Section 4: Z Travel & Plunge Heights */}
-        <div class="sheet-section">
-          <span class="sheet-section-heading">G-Code Kinematics</span>
-          <div class="sheet-gaps-grid flex items-center justify-between">
-            <div class="sheet-gaps-inputs flex flex-col gap-2 flex-1">
+        <div class="sheet-card">
+          <span class="sheet-section-title">G-Code Kinematics</span>
+          <div class="sheet-gaps-grid flex items-center justify-between gap-3">
+            <div class="flex flex-col gap-2 flex-1">
               <div class="sheet-field">
                 <span class="sheet-label">Rapid Clearance (Z)</span>
                 <div class="sheet-stat-display font-mono">
@@ -176,15 +184,14 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
             </div>
 
             {/* Clearance Diagram with Knife */}
-            <div class="gaps-diagram">
-              <svg width="68" height="54" viewBox="0 0 74 60" fill="none">
-                <rect x="14" y="44" width="56" height="14" rx="2" fill="#d97706" opacity="0.8" />
-                <line x1="10" y1="44" x2="72" y2="44" stroke="#fef3c7" stroke-width="1" />
-                <rect x="50" y="6" width="6" height="14" fill="#cbd5e1" rx="1" />
-                <polygon points="50,20 56,20 53,26" fill="#ef4444" />
-                <line x1="14" y1="12" x2="50" y2="12" stroke="#22c55e" stroke-dasharray="2 2" />
-                <circle cx="20" cy="12" r="5" fill="#1e293b" stroke="#22c55e" />
-                <text x="20" y="15" font-size="7" font-family="sans-serif" font-weight="bold" fill="#22c55e" text-anchor="middle">Z</text>
+            <div class="gaps-diagram flex-shrink-0">
+              <svg width="60" height="48" viewBox="0 0 74 60" fill="none">
+                <rect x="14" y="44" width="56" height="14" rx="2" fill="#1e2330" stroke="#334155" stroke-width="1" />
+                <rect x="50" y="6" width="6" height="14" fill="#64748b" rx="1" />
+                <polygon points="50,20 56,20 53,26" fill="#e63946" />
+                <line x1="14" y1="12" x2="50" y2="12" stroke="#10b981" stroke-dasharray="2 2" />
+                <circle cx="20" cy="12" r="5" fill="#090a0d" stroke="#10b981" />
+                <text x="20" y="15" font-size="7" font-family="sans-serif" font-weight="bold" fill="#10b981" text-anchor="middle">Z</text>
               </svg>
             </div>
           </div>
@@ -193,40 +200,40 @@ export const SheetSettingsPanel: Component<SheetSettingsPanelProps> = (props) =>
         {/* Section 5: Cutting Metrics */}
         <Show when={h()}>
           {(stats) => (
-            <div class="sheet-section">
-              <span class="sheet-section-heading">Cutting Metrics</span>
-              <div class="sheet-metrics-grid flex flex-col gap-2">
-                <div class="sheet-metric-row flex items-center justify-between">
-                  <span class="text-xs text-slate-400">Cut Distance</span>
-                  <span class="font-mono text-xs font-semibold text-purple-400">
+            <div class="sheet-card">
+              <span class="sheet-section-title">Cutting Metrics</span>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Cut Distance</span>
+                  <span class="font-mono font-semibold text-purple-400">
                     {formatDistance(stats().total_cut_distance, props.unit)}
                   </span>
                 </div>
 
-                <div class="sheet-metric-row flex items-center justify-between">
-                  <span class="text-xs text-slate-400">Rapid Travel</span>
-                  <span class="font-mono text-xs text-slate-300">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Rapid Travel</span>
+                  <span class="font-mono text-slate-300">
                     {formatDistance(stats().total_rapid_distance, props.unit)}
                   </span>
                 </div>
 
-                <div class="sheet-metric-row flex items-center justify-between">
-                  <span class="text-xs text-slate-400">Corner Swivels</span>
-                  <span class="font-mono text-xs font-semibold text-cyan-400">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Corner Swivels</span>
+                  <span class="font-mono font-semibold text-cyan-400">
                     {stats().swivel_arc_count} Arcs
                   </span>
                 </div>
 
-                <div class="sheet-metric-row flex items-center justify-between">
-                  <span class="text-xs text-slate-400">Programmed Feed</span>
-                  <span class="font-mono text-xs text-slate-200">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Programmed Feed</span>
+                  <span class="font-mono text-slate-200">
                     {stats().cut_feedrate ? stats().cut_feedrate!.toFixed(0) : "Auto"} {props.unit}/min
                   </span>
                 </div>
 
-                <div class="sheet-metric-row flex items-center justify-between pt-1 border-t border-slate-800">
-                  <span class="text-xs font-medium text-slate-300">Estimated Time</span>
-                  <span class="font-mono text-xs font-bold text-emerald-400">
+                <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                  <span class="font-medium text-slate-300">Estimated Time</span>
+                  <span class="font-mono font-bold text-emerald-400">
                     {formatTime(stats().estimated_cycle_time_seconds)}
                   </span>
                 </div>

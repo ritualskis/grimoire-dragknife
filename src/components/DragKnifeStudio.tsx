@@ -37,12 +37,12 @@ export const DragKnifeStudio: Component = () => {
   });
 
   const [config, setConfig] = createSignal<DragKnifeConfig>({
-    blade_offset: 0.0625, // Donek D2 ~1/16 in
+    blade_offset: 1.588, // Donek D2
     tolerance_angle_deg: 20.0,
-    swivel_lift_height: 0.02,
-    swivel_feed: 15.0,
+    swivel_lift_height: 0.5,
+    swivel_feed: 400.0,
     disable_spindle: true,
-    unit_override: "in",
+    unit_override: null,
   });
 
   const [hudStats, setHudStats] = createSignal<HUDStats | null>(null);
@@ -54,11 +54,11 @@ export const DragKnifeStudio: Component = () => {
     setProjectName(filename.replace(/\.(gcode|nc|tap|txt)$/i, ""));
 
     try {
-      const stats = await analyzeGCode(content, config());
+      const stats = await analyzeGCode(content, { ...config(), unit_override: null });
       setHudStats(stats);
 
-      // Set active unit and sheet dimensions based on analysis
-      if (stats.unit.includes("G20") || stats.unit.includes("Imperial")) {
+      const isImperial = stats.unit.includes("G20") || stats.unit.includes("Imperial");
+      if (isImperial) {
         setUnit("in");
         const newCfg: DragKnifeConfig = {
           ...config(),
@@ -121,6 +121,7 @@ export const DragKnifeStudio: Component = () => {
   };
 
   const handleUnitToggle = (newUnit: Unit) => {
+    if (newUnit === unit()) return;
     setUnit(newUnit);
     const currOffset = config().blade_offset;
     const isInch = newUnit === "in";
@@ -143,15 +144,17 @@ export const DragKnifeStudio: Component = () => {
     };
     setConfig(newCfg);
 
-    // Convert sheet config units
+    // Convert sheet config units accurately
     setSheetConfig((s) => ({
       ...s,
-      width: isInch ? Number((s.width / 25.4).toFixed(1)) : Number((s.width * 25.4).toFixed(0)),
-      height: isInch ? Number((s.height / 25.4).toFixed(1)) : Number((s.height * 25.4).toFixed(0)),
+      width: isInch ? Number((s.width / 25.4).toFixed(2)) : Number((s.width * 25.4).toFixed(1)),
+      height: isInch ? Number((s.height / 25.4).toFixed(2)) : Number((s.height * 25.4).toFixed(1)),
+      originX: isInch ? Number((s.originX / 25.4).toFixed(3)) : Number((s.originX * 25.4).toFixed(2)),
+      originY: isInch ? Number((s.originY / 25.4).toFixed(3)) : Number((s.originY * 25.4).toFixed(2)),
       thickness: isInch ? Number((s.thickness / 25.4).toFixed(3)) : Number((s.thickness * 25.4).toFixed(2)),
-      clearanceGap: isInch ? 2 : 50,
-      plungeGap: isInch ? 1 : 25,
-      homeZ: isInch ? 10 : 250,
+      clearanceGap: isInch ? Number((s.clearanceGap / 25.4).toFixed(2)) : Number((s.clearanceGap * 25.4).toFixed(1)),
+      plungeGap: isInch ? Number((s.plungeGap / 25.4).toFixed(2)) : Number((s.plungeGap * 25.4).toFixed(1)),
+      homeZ: isInch ? Number((s.homeZ / 25.4).toFixed(2)) : Number((s.homeZ * 25.4).toFixed(1)),
     }));
 
     if (currentFileContent()) {

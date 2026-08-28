@@ -322,10 +322,11 @@ pub fn parse_gcode(content: &str) -> ParsedProgram {
     }
 
     if !has_explicit_unit {
-        if let (Some(min), Some(max)) = (min_z, max_z) {
-            if min < -25.0 || max > 100.0 {
-                detected_unit = Unit::Millimeters;
-            }
+        let max_x = all_points.iter().map(|p| p.x.abs()).fold(0.0, f64::max);
+        let max_y = all_points.iter().map(|p| p.y.abs()).fold(0.0, f64::max);
+        let max_f = feedrates.iter().copied().fold(0.0, f64::max);
+        if max_x > 150.0 || max_y > 150.0 || max_f > 250.0 || min_z.map_or(false, |z| z < -25.0) {
+            detected_unit = Unit::Millimeters;
         }
     }
 
