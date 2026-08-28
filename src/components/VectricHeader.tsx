@@ -11,6 +11,8 @@ interface VectricHeaderProps {
   onSelectSample?: (sample: SampleFile) => void;
   activeTab: "sheet" | "dragknife" | "hud" | "gcode";
   onToggleTab: (tab: "sheet" | "dragknife" | "hud" | "gcode") => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
   onExport?: () => void;
   hasFile?: boolean;
 }
@@ -95,35 +97,35 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
         <div class="spark-nav-tabs flex items-center">
           <button
             type="button"
-            class={`spark-tab-btn ${props.activeTab === "sheet" ? "active" : ""}`}
+            class={`spark-tab-btn ${props.activeTab === "sheet" && props.isSidebarOpen ? "active" : ""}`}
             onClick={() => props.onToggleTab("sheet")}
           >
             Sheet Settings
           </button>
           <button
             type="button"
-            class={`spark-tab-btn ${props.activeTab === "dragknife" ? "active" : ""}`}
+            class={`spark-tab-btn ${props.activeTab === "dragknife" && props.isSidebarOpen ? "active" : ""}`}
             onClick={() => props.onToggleTab("dragknife")}
           >
             Knife Parameters
           </button>
           <button
             type="button"
-            class={`spark-tab-btn ${props.activeTab === "hud" ? "active" : ""}`}
+            class={`spark-tab-btn ${props.activeTab === "hud" && props.isSidebarOpen ? "active" : ""}`}
             onClick={() => props.onToggleTab("hud")}
           >
             Telemetry HUD
           </button>
           <button
             type="button"
-            class={`spark-tab-btn ${props.activeTab === "gcode" ? "active" : ""}`}
+            class={`spark-tab-btn ${props.activeTab === "gcode" && props.isSidebarOpen ? "active" : ""}`}
             onClick={() => props.onToggleTab("gcode")}
           >
             G-Code Inspector
           </button>
         </div>
 
-        {/* Right: Unit Toggle & Export */}
+        {/* Right: Unit Toggle, Export & Sidebar Collapse */}
         <div class="flex items-center gap-2.5">
           {/* Unit Selector */}
           <div class="spark-unit-pill flex items-center">
@@ -159,6 +161,19 @@ export const VectricHeader: Component<VectricHeaderProps> = (props) => {
               <span>Export NC</span>
             </button>
           </Show>
+
+          {/* Sidebar Toggle Button */}
+          <button
+            type="button"
+            class="spark-icon-btn flex items-center justify-center p-1.5 text-xs"
+            onClick={props.onToggleSidebar}
+            title={props.isSidebarOpen ? "Collapse Inspector Panel" : "Open Inspector Panel"}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="15" y1="3" x2="15" y2="21" />
+            </svg>
+          </button>
         </div>
       </div>
     </header>

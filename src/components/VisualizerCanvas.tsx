@@ -301,13 +301,13 @@ export const VisualizerCanvas: Component<VisualizerCanvasProps> = (props) => {
           )}
         </Show>
 
-        {/* Floating Bottom Hint Ribbon (Exact Vectric Spark Format) */}
+        {/* Floating Bottom Hint Ribbon */}
         <div class="spark-bottom-hint-ribbon absolute bottom-2 inset-x-8 z-10">
           <div class="hint-pill flex items-center justify-between">
             <span class="hint-text truncate">
-              Click on an object to select, click again to transform | Hold <strong>SHIFT</strong> to select/deselect multiple objects | Drag left to right to select everything the box contains | Drag right to left to select everything the box touches
+              Drag or Middle-Click to pan | Scroll or Pinch to zoom | Double-click or press <strong>F</strong> to fit workpiece | Space + Drag to navigate
             </span>
-            <span class="hint-question-btn" title="Help & Selection Rules">?</span>
+            <span class="hint-question-btn" title="Double click canvas to fit view">?</span>
           </div>
         </div>
       </div>

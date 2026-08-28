@@ -22,6 +22,7 @@ export const DragKnifeStudio: Component = () => {
   const [unit, setUnit] = createSignal<Unit>("in");
   const [isProcessing, setIsProcessing] = createSignal<boolean>(false);
   const [activeTab, setActiveTab] = createSignal<"sheet" | "dragknife" | "hud" | "gcode">("sheet");
+  const [isSidebarOpen, setIsSidebarOpen] = createSignal(true);
 
   let fileInputRef: HTMLInputElement | undefined;
 
@@ -242,7 +243,12 @@ export const DragKnifeStudio: Component = () => {
         onOpenFile={triggerOpenDialog}
         onSelectSample={handleSelectSample}
         activeTab={activeTab()}
-        onToggleTab={setActiveTab}
+        onToggleTab={(tab) => {
+          setActiveTab(tab);
+          setIsSidebarOpen(true);
+        }}
+        isSidebarOpen={isSidebarOpen()}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen())}
         onExport={handleExportGCode}
         hasFile={Boolean(currentFileContent())}
       />
@@ -262,50 +268,52 @@ export const DragKnifeStudio: Component = () => {
         </main>
 
         {/* Right: Collapsible Inspector / Settings Panel */}
-        <aside class="spark-right-sidebar">
-          <Show when={activeTab() === "sheet"}>
-            <SheetSettingsPanel
-              sheetConfig={sheetConfig()}
-              unit={unit()}
-              onUpdateSheet={(s) => setSheetConfig(s)}
-              onClose={() => setActiveTab("dragknife")}
-            />
-          </Show>
-
-          <Show when={activeTab() === "dragknife"}>
-            <div class="spark-panel-scroll">
-              <ParameterControls
-                config={config()}
+        <Show when={isSidebarOpen()}>
+          <aside class="spark-right-sidebar">
+            <Show when={activeTab() === "sheet"}>
+              <SheetSettingsPanel
+                sheetConfig={sheetConfig()}
                 unit={unit()}
-                onConfigChange={handleConfigChange}
-                onUnitToggle={handleUnitToggle}
-                onProcess={() => handleProcess()}
-                isProcessing={isProcessing()}
-                hasFile={Boolean(currentFileContent())}
+                onUpdateSheet={(s) => setSheetConfig(s)}
+                onClose={() => setIsSidebarOpen(false)}
               />
-            </div>
-          </Show>
+            </Show>
 
-          <Show when={activeTab() === "hud"}>
-            <div class="spark-panel-scroll">
-              <HudStatsCard
-                stats={hudStats()}
-                filename={currentFilename()}
-                unit={unit()}
-              />
-            </div>
-          </Show>
+            <Show when={activeTab() === "dragknife"}>
+              <div class="spark-panel-scroll">
+                <ParameterControls
+                  config={config()}
+                  unit={unit()}
+                  onConfigChange={handleConfigChange}
+                  onUnitToggle={handleUnitToggle}
+                  onProcess={() => handleProcess()}
+                  isProcessing={isProcessing()}
+                  hasFile={Boolean(currentFileContent())}
+                />
+              </div>
+            </Show>
 
-          <Show when={activeTab() === "gcode"}>
-            <div class="spark-panel-scroll">
-              <GCodeInspector
-                originalGCode={currentFileContent()}
-                processedGCode={dragKnifeResult()?.processed_gcode ?? ""}
-                filename={currentFilename()}
-              />
-            </div>
-          </Show>
-        </aside>
+            <Show when={activeTab() === "hud"}>
+              <div class="spark-panel-scroll">
+                <HudStatsCard
+                  stats={hudStats()}
+                  filename={currentFilename()}
+                  unit={unit()}
+                />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === "gcode"}>
+              <div class="spark-panel-scroll">
+                <GCodeInspector
+                  originalGCode={currentFileContent()}
+                  processedGCode={dragKnifeResult()?.processed_gcode ?? ""}
+                  filename={currentFilename()}
+                />
+              </div>
+            </Show>
+          </aside>
+        </Show>
       </div>
     </div>
   );
