@@ -1,6 +1,9 @@
+import fs from 'fs';
+import vm from 'vm';
+
 var realPrint = (typeof process !== 'undefined' && process.stdout) ? function(s){ process.stdout.write(s + '\n'); } : (typeof print !== 'undefined' ? print : (typeof console !== 'undefined' && console.log ? console.log.bind(console) : function(){}));
 var print = realPrint;
-var load = typeof load !== 'undefined' ? load : function(p) { require('vm').runInThisContext(require('fs').readFileSync(p, 'utf8')); };
+var load = function(p) { vm.runInThisContext(fs.readFileSync(p, 'utf8')); };
 var window = typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : {});
 if (!window.addEventListener) window.addEventListener = function() {};
 if (typeof global !== 'undefined') global.window = window;

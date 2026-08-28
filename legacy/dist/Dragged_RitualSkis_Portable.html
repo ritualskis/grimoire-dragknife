@@ -1846,8 +1846,8 @@ canvas:active {
             <span class="slider-round"></span>
           </label>
           <div>
-            <label for="relocate-longest-straight" class="toggle-label">Smart Start Point (Longest Flat Edge)</label>
-            <small class="help-text">Relocates closed loops to enter midway along longest straight segment for settled alignment.</small>
+            <label for="relocate-longest-straight" class="toggle-label">Smart Start Point (Contour 0 Point)</label>
+            <small class="help-text">Enters closed loops directly at the programmed 0 point with lead-in aligned to the path.</small>
           </div>
         </div>
 
@@ -2235,13 +2235,13 @@ canvas:active {
   <div class="modal-backdrop hidden" id="audit-modal">
     <div class="modal-card" style="width:min(900px, 95vw);">
       <div class="modal-header">
-        <h2>🧪 Kinematic &amp; Geometric Edge-Case Verification Certificate</h2>
+        <h2>Kinematic &amp; Geometric Edge-Case Verification Certificate</h2>
         <button class="btn-close-modal" id="btn-close-audit">&times;</button>
       </div>
       <div class="modal-body">
         <div style="background:rgba(34, 197, 94, 0.12); border:1px solid #22c55e; border-radius:14px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between;">
           <div>
-            <strong style="color:#22c55e; font-family:var(--font-mono); font-size:1rem;">✅ ALL 12 CONCEIVABLE EDGE CASES PASSED (0 ERRORS)</strong>
+            <strong style="color:#22c55e; font-family:var(--font-mono); font-size:1rem;">ALL 12 CONCEIVABLE EDGE CASES PASSED (0 ERRORS)</strong>
             <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Engine verified zero nan/inf values, zero false-positive collinear turns, strict unstripped spindle safety, and accurate Z-ramp plunge spur removal.</p>
           </div>
           <span style="font-family:var(--font-mono); font-size:1.1rem; font-weight:800; color:#22c55e;">100% VERIFIED</span>
@@ -3614,55 +3614,14 @@ class DragKnifeProcessor {
 
   
   /**
-   * Re-indexes closed contour loops so entry plunge occurs at the midpoint
-   * of the longest straight flat segment (maximum runway for blade caster settlement).
+   * Re-indexes closed contour loops so entry plunge occurs at the programmed 0 point
+   * (the first vertex of the contour) without relocating to the longest edge.
    */
   relocateClosedLoopToLongestStraight(segs) {
     if (!segs || segs.length < 2) return segs;
 
-    let maxLen = -1;
-    let bestIdx = 0;
-    for (let i = 0; i < segs.length; i++) {
-      const seg = segs[i];
-      if (!seg.fromArc && seg.length > maxLen) {
-        maxLen = seg.length;
-        bestIdx = i;
-      }
-    }
-
-    // Fallback: If shape has no flat straight moves (e.g. pure ellipse/circle arcs), select longest arc segment
-    if (maxLen <= 0) {
-      for (let i = 0; i < segs.length; i++) {
-        if (segs[i].length > maxLen) {
-          maxLen = segs[i].length;
-          bestIdx = i;
-        }
-      }
-    }
-
-    if (maxLen <= 0) return segs;
-
-    const bestSeg = segs[bestIdx];
-    const midX = (bestSeg.x1 + bestSeg.x2) / 2;
-    const midY = (bestSeg.y1 + bestSeg.y2) / 2;
-    const midZ = (bestSeg.z1 + bestSeg.z2) / 2;
-
-    const firstHalf = Object.assign({}, bestSeg, {
-      x2: midX, y2: midY, z2: midZ,
-      length: bestSeg.length / 2
-    });
-
-    const secondHalf = Object.assign({}, bestSeg, {
-      x1: midX, y1: midY, z1: midZ,
-      length: bestSeg.length / 2
-    });
-
-    const reordered = [secondHalf];
-    for (let k = bestIdx + 1; k < segs.length; k++) reordered.push(segs[k]);
-    for (let k = 0; k < bestIdx; k++) reordered.push(segs[k]);
-    reordered.push(firstHalf);
-
-    return reordered;
+    // Start directly from the 0 point (index 0 vertex of the programmed contour)
+    return segs;
   }
 
   normalizeAngle(angle) {
@@ -4574,10 +4533,10 @@ class CanvasVisualizer {
     const statusEl = document.getElementById('sim-status-text');
     if (statusEl) {
       if (state.isRapid) {
-        statusEl.textContent = `✈ RAPID AIR TRANSIT (Z-LIFTED): X=${state.spindleX.toFixed(2)} Y=${state.spindleY.toFixed(2)} | Z=${zFormatted} (Safe Clearance)`;
+        statusEl.textContent = `RAPID AIR TRANSIT (Z-LIFTED): X=${state.spindleX.toFixed(2)} Y=${state.spindleY.toFixed(2)} | Z=${zFormatted} (Safe Clearance)`;
         statusEl.style.color = this.getCssColor('--cad-text-muted', '#94a3b8');
       } else if (state.isSwiveling) {
-        statusEl.textContent = `⚡ CORNER SWIVEL IN PROGRESS: Blade tip pinned at (${state.tipX.toFixed(2)}, ${state.tipY.toFixed(2)}) | Z=${zFormatted} (Micro-Lift)`;
+        statusEl.textContent = `CORNER SWIVEL IN PROGRESS: Blade tip pinned at (${state.tipX.toFixed(2)}, ${state.tipY.toFixed(2)}) | Z=${zFormatted} (Micro-Lift)`;
         statusEl.style.color = this.getCssColor('--cad-text-accent', '#5eead4');
       } else {
         statusEl.textContent = `Cutting profile: X=${state.tipX.toFixed(2)} Y=${state.tipY.toFixed(2)} | Z=${zFormatted} [CUT DEPTH] | Blade angle: ${Math.round(state.headingAngle * 180 / Math.PI)}°`;
@@ -4679,7 +4638,7 @@ class CanvasVisualizer {
     CADTooltipComponent.render(ctx, this.width, this.height, {
       anchorX: pt.sx,
       anchorY: pt.sy,
-      headerTitle: "📍 G-CODE CURVE VERTEX ENDPOINT",
+      headerTitle: "G-CODE CURVE VERTEX ENDPOINT",
       headerColor: "#38bdf8",
       detailLines: [
         `Pt (${fmtX}, ${fmtY}) ${uLabel} • G1 Move ${hv.segIndex}/${hv.totalSegs}`
@@ -4715,7 +4674,7 @@ class CanvasVisualizer {
     CADTooltipComponent.render(ctx, this.width, this.height, {
       anchorX: pSpindle.sx,
       anchorY: pSpindle.sy,
-      headerTitle: "🔪 DRAG-KNIFE BLADE CASTER ASSEMBLY",
+      headerTitle: "DRAG-KNIFE BLADE CASTER ASSEMBLY",
       headerColor: "#fb923c",
       detailLines: [
         `Blade Offset (e) = ${eInches.toFixed(3)}" (${eMM.toFixed(2)} mm)`,
@@ -4754,7 +4713,7 @@ class CanvasVisualizer {
     CADTooltipComponent.render(ctx, this.width, this.height, {
       anchorX: pPivot.sx,
       anchorY: pPivot.sy,
-      headerTitle: "⚡ STATIONARY CORNER SWIVEL PIVOT (+)",
+      headerTitle: "STATIONARY CORNER SWIVEL PIVOT (+)",
       headerColor: "#facc15",
       detailLines: [
         `Corner Vertex: (${px}, ${py}) ${uLabel}`,
@@ -5549,19 +5508,19 @@ const SAMPLE_CATALOG = {
       newChip.dataset.sample = "custom-upload";
 
       const tagClass = isMetric ? "metric" : "imperial";
-      newChip.innerHTML = "<span style=\"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px;display:inline-block;vertical-align:middle;\">📁 " + filename + "</span> <span class=\"chip-unit-tag " + tagClass + "\">" + unitLabel + "</span>";
+      newChip.innerHTML = "<span style=\"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px;display:inline-block;vertical-align:middle;\">" + filename + "</span> <span class=\"chip-unit-tag " + tagClass + "\">" + unitLabel + "</span>";
 
       const wmCheck = detectDraggedWatermark(rawGCodeStr);
       let isWatermarkedFile = wmCheck.isWatermarked;
       let restoredRawGCode = wmCheck.restoredRaw;
 
-      // Make sidebar chip show sleek orange exclamation point badge (❗) when file has Dragged watermark
+      // Make sidebar chip show sleek orange exclamation point badge when file has Dragged watermark
       if (isWatermarkedFile) {
         newChip.classList.add("wm-watermarked-card");
       }
       const exclSvg = `<span class="wm-chip-excl" style="margin-right:6px; display:inline-flex; align-items:center; vertical-align:middle;" title="Post-Processed File with Dragged watermark"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="#ff6b00" d="M10 3h4v10h-4zm0 14h4v4h-4z"/></svg></span>`;
       const exclSpan = isWatermarkedFile ? exclSvg : ``;
-      newChip.innerHTML = "<span style=\"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px;display:inline-block;vertical-align:middle;\">📁 " + filename + "</span> <span style=\"display:inline-flex;align-items:center;\">" + exclSpan + "<span class=\"chip-unit-tag " + tagClass + "\">" + unitLabel + "</span></span>";
+      newChip.innerHTML = "<span style=\"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px;display:inline-block;vertical-align:middle;\">" + filename + "</span> <span style=\"display:inline-flex;align-items:center;\">" + exclSpan + "<span class=\"chip-unit-tag " + tagClass + "\">" + unitLabel + "</span></span>";
 
       function updateMainWatermarkOverlay(activeWM, activeRestored, is3D, isMultiPass, activeRecord) {
         const overlay = document.getElementById("main-watermark-overlay");
@@ -5955,7 +5914,7 @@ const SAMPLE_CATALOG = {
 
     tbody.innerHTML = diags.map(d => {
       const actionBadge = d.exceedsThreshold
-        ? `<span class="badge-swivel-yes">⚡ STATIONARY SWIVEL (${d.turnAngleDeg > 0 ? '+' : ''}${d.turnAngleDeg}°)</span>`
+        ? `<span class="badge-swivel-yes">STATIONARY SWIVEL (${d.turnAngleDeg > 0 ? '+' : ''}${d.turnAngleDeg}°)</span>`
         : `<span class="badge-swivel-no">Smooth Continue (${d.turnAngleDeg > 0 ? '+' : ''}${d.turnAngleDeg}°)</span>`;
 
       const gCodeSnippet = d.gcodeOutput || '<span style="opacity:0.4">Linear continuous continuation</span>';
@@ -6462,7 +6421,7 @@ const SAMPLE_CATALOG = {
         row.style.alignItems = 'center';
         row.style.justifyContent = 'space-between';
 
-        row.innerHTML = `<span><strong>Test #${item.id}</strong>: ${item.title}</span><span style="color:${isOk ? '#22c55e' : '#ef4444'}; font-weight:800;">${isOk ? '✔ PASSED (' + out.spindlePathSegments.length + ' segs, ' + swCount + ' swivels)' : '✖ FAILED: ' + errs.join(', ')}</span>`;
+        row.innerHTML = `<span><strong>Test #${item.id}</strong>: ${item.title}</span><span style="color:${isOk ? '#22c55e' : '#ef4444'}; font-weight:800;">${isOk ? 'PASSED (' + out.spindlePathSegments.length + ' segs, ' + swCount + ' swivels)' : 'FAILED: ' + errs.join(', ')}</span>`;
         listEl.appendChild(row);
       } catch (e) {
         const row = document.createElement('div');

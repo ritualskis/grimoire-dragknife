@@ -741,55 +741,14 @@ class DragKnifeProcessor {
 
   
   /**
-   * Re-indexes closed contour loops so entry plunge occurs at the midpoint
-   * of the longest straight flat segment (maximum runway for blade caster settlement).
+   * Re-indexes closed contour loops so entry plunge occurs at the programmed 0 point
+   * (the first vertex of the contour) without relocating to the longest edge.
    */
   relocateClosedLoopToLongestStraight(segs) {
     if (!segs || segs.length < 2) return segs;
 
-    let maxLen = -1;
-    let bestIdx = 0;
-    for (let i = 0; i < segs.length; i++) {
-      const seg = segs[i];
-      if (!seg.fromArc && seg.length > maxLen) {
-        maxLen = seg.length;
-        bestIdx = i;
-      }
-    }
-
-    // Fallback: If shape has no flat straight moves (e.g. pure ellipse/circle arcs), select longest arc segment
-    if (maxLen <= 0) {
-      for (let i = 0; i < segs.length; i++) {
-        if (segs[i].length > maxLen) {
-          maxLen = segs[i].length;
-          bestIdx = i;
-        }
-      }
-    }
-
-    if (maxLen <= 0) return segs;
-
-    const bestSeg = segs[bestIdx];
-    const midX = (bestSeg.x1 + bestSeg.x2) / 2;
-    const midY = (bestSeg.y1 + bestSeg.y2) / 2;
-    const midZ = (bestSeg.z1 + bestSeg.z2) / 2;
-
-    const firstHalf = Object.assign({}, bestSeg, {
-      x2: midX, y2: midY, z2: midZ,
-      length: bestSeg.length / 2
-    });
-
-    const secondHalf = Object.assign({}, bestSeg, {
-      x1: midX, y1: midY, z1: midZ,
-      length: bestSeg.length / 2
-    });
-
-    const reordered = [secondHalf];
-    for (let k = bestIdx + 1; k < segs.length; k++) reordered.push(segs[k]);
-    for (let k = 0; k < bestIdx; k++) reordered.push(segs[k]);
-    reordered.push(firstHalf);
-
-    return reordered;
+    // Start directly from the 0 point (index 0 vertex of the programmed contour)
+    return segs;
   }
 
   normalizeAngle(angle) {
